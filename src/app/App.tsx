@@ -13,7 +13,7 @@ import {
   Layers, ClipboardList, Network, Key, Target, Star, Info,
   ChevronRight as CR, Inbox, Package, Copy, XCircle,
   Pin, Bookmark, Share2, Printer, Paperclip, MessageCircle, Archive, Monitor,
-  Play, Circle
+  Play, Circle, LayoutGrid
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart as RBarChart, Bar,
@@ -1292,7 +1292,7 @@ function TeamPage({
   setShowCreateAnnouncement: (b: boolean) => void;
   showCreateTask: boolean;
   setShowCreateTask: (b: boolean) => void;
-  reporteesViewMode: "list" | "org";
+  reporteesViewMode: "list" | "grid";
   showTeamFilter: boolean;
   setShowTeamFilter: (b: boolean) => void;
 }) {
@@ -1837,38 +1837,44 @@ function TeamPage({
                       </div>
                     )
                   ) : (
-                    /* ORGANIZATION VIEW */
-                    (() => {
-                      const visibleList = getVisibleEmployeesForOrg(filtered, EMPLOYEES);
-                      const roots = visibleList.filter(e => {
-                        return e.manager === "CEO" || !visibleList.some(emp => emp.name === e.manager);
-                      });
-
-                      if (roots.length === 0) {
-                        return (
-                          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400 text-sm shadow-sm">
-                            No hierarchy could be generated for the active filters
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm overflow-auto">
-                          <div className="flex flex-col gap-6 max-w-3xl">
-                            {roots.map(root => (
-                              <OrgTreeNode
-                                key={root.id}
-                                employee={root}
-                                allEmployees={visibleList}
-                                expandedNodes={expandedNodes}
-                                toggleExpand={(id) => setExpandedNodes(prev => ({ ...prev, [id]: !prev[id] }))}
-                                onSelect={(e) => navigate("employee-profile", e)}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })()
+                    /* GRID VIEW */
+                    filtered.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {filtered.map(e => {
+                          const att = getAttendanceDetails(e);
+                          return (
+                            <div
+                              key={e.id}
+                              onClick={() => navigate("employee-profile", e)}
+                              className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:border-[#5C5CFF]/30 hover:shadow-md transition-all cursor-pointer flex items-start gap-4 text-left group"
+                            >
+                              <Avt initials={e.initials} color={e.color} size="lg" className="flex-shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <h4 className="text-sm font-bold text-gray-800 group-hover:text-[#5C5CFF] transition-colors truncate">
+                                  {e.name}
+                                </h4>
+                                <p className="text-xs text-gray-500 truncate mt-0.5">
+                                  {e.designation}
+                                </p>
+                                <p className="text-[11px] text-gray-400 truncate mt-0.5">
+                                  {e.dept} · {e.branch}
+                                </p>
+                                <div className="flex items-center gap-1.5 mt-3">
+                                  <div className={cn("w-2 h-2 rounded-full", att.dotColor)} />
+                                  <span className="text-xs font-semibold text-gray-600">
+                                    {att.status} {att.status !== "Checked Out" && att.status !== "On Leave" && `(${att.checkIn})`}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400 text-sm shadow-sm">
+                        No matching reportees found
+                      </div>
+                    )
                   )}
                 </div>
               </div>
@@ -2625,7 +2631,7 @@ function LeavePage({
 }
 
 // ── Employee Profile Page ──────────────────────────────────────────────────────
-function EmployeeProfilePage({ employee, navigate }: { employee:Employee; navigate:(p:AppPage)=>void }) {
+function EmployeeProfilePage({ employee, navigate, origin }: { employee:Employee; navigate:(p:AppPage)=>void; origin?: string }) {
   const [tab, setTab] = useState("Activities");
   const [showEdit, setShowEdit] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -2634,11 +2640,20 @@ function EmployeeProfilePage({ employee, navigate }: { employee:Employee; naviga
     <div className="flex flex-col h-full">
       <div className="bg-white border-b border-gray-200 px-6 py-5">
         <div className="flex items-start justify-between mb-4">
-          <div className="text-xs text-gray-400 flex items-center gap-1">
-            <button onClick={()=>navigate("my-space")} className="hover:text-[#5C5CFF]">Home</button><ChevronRight size={12}/>
-            <button onClick={()=>navigate("organization")} className="hover:text-[#5C5CFF]">Organization</button><ChevronRight size={12}/>
-            <span>{employee.name}</span>
-          </div>
+          {origin === "team" ? (
+            <button 
+              onClick={() => navigate("team")} 
+              className="flex items-center gap-1.5 text-gray-505 hover:text-[#5C5CFF] font-medium text-xs mb-3 transition-colors"
+            >
+              <ChevronLeft size={14} /> Back to Reportees
+            </button>
+          ) : (
+            <div className="text-xs text-gray-400 flex items-center gap-1 mb-3">
+              <button onClick={()=>navigate("my-space")} className="hover:text-[#5C5CFF]">Home</button><ChevronRight size={12}/>
+              <button onClick={()=>navigate("organization")} className="hover:text-[#5C5CFF]">Organization</button><ChevronRight size={12}/>
+              <span>{employee.name}</span>
+            </div>
+          )}
           <div className="flex gap-2 relative">
             <Btn variant="outline" size="sm" onClick={()=>setShowEdit(true)}><Edit size={13}/>Edit</Btn>
             <div className="relative">
@@ -4163,13 +4178,41 @@ export default function App() {
   const [supportTab, setSupportTab] = useState<string>("Home");
   const [attPeriod, setAttPeriod] = useState<"Weekly" | "Monthly" | "Yearly">("Monthly");
   const [checkedIn, setCheckedIn] = useState<boolean>(true);
-  const [reporteesViewMode, setReporteesViewMode] = useState<"list"|"org">(() => (sessionStorage.getItem("reportees_view_mode") as "list"|"org") || "list");
+  const [reporteesViewMode, setReporteesViewMode] = useState<"list"|"grid">(
+    () => (sessionStorage.getItem("reportees_view_mode") as "list"|"grid") || "list"
+  );
 
   useEffect(() => {
     sessionStorage.setItem("reportees_view_mode", reporteesViewMode);
   }, [reporteesViewMode]);
 
   // Search input states
+  const [profileOrigin, setProfileOrigin] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleUrl = () => {
+      const path = window.location.pathname;
+      const match = path.match(/\/team\/reportees\/([A-Za-z0-9E-]+)/);
+      if (match) {
+        const empId = match[1];
+        const emp = EMPLOYEES.find(e => e.id === empId);
+        if (emp) {
+          setSelectedEmployee(emp);
+          setPage("employee-profile");
+          setProfileOrigin("team");
+        }
+      } else if (path === "/team") {
+        setPage("team");
+      } else if (path === "/organization") {
+        setPage("organization");
+      }
+    };
+
+    handleUrl();
+    window.addEventListener("popstate", handleUrl);
+    return () => window.removeEventListener("popstate", handleUrl);
+  }, []);
+
   const [tasksSearch, setTasksSearch] = useState<string>("");
   const [orgSearch, setOrgSearch] = useState<string>("");
   const [teamSearch, setTeamSearch] = useState<string>("");
@@ -4207,6 +4250,20 @@ export default function App() {
     if(p === "organization" && tabOrSection) {
       setOrgTab(tabOrSection);
     }
+
+    if (p === "employee-profile" && emp) {
+      setProfileOrigin(page === "team" ? "team" : "organization");
+      window.history.pushState(null, "", `/team/reportees/${emp.id}`);
+    } else {
+      if (p === "team") {
+        window.history.pushState(null, "", "/team");
+      } else if (p === "organization") {
+        window.history.pushState(null, "", "/organization");
+      } else {
+        window.history.pushState(null, "", "/");
+      }
+    }
+
     setPage(p);
     setNotifOpen(false);
     setQuickActionsOpen(false);
@@ -4556,7 +4613,7 @@ export default function App() {
           <div className="flex items-center border border-[#E5E7EB] rounded-[10px] bg-[#FFFFFF] overflow-hidden h-10">
             <button
               onClick={() => setReporteesViewMode("list")}
-              title="List View"
+              title="List view"
               className={cn(
                 "h-full w-10 flex items-center justify-center transition-colors border-r border-[#E5E7EB]",
                 reporteesViewMode === "list"
@@ -4567,16 +4624,16 @@ export default function App() {
               <List size={16} />
             </button>
             <button
-              onClick={() => setReporteesViewMode("org")}
-              title="Organization View"
+              onClick={() => setReporteesViewMode("grid")}
+              title="Grid view"
               className={cn(
                 "h-full w-10 flex items-center justify-center transition-colors",
-                reporteesViewMode === "org"
+                reporteesViewMode === "grid"
                   ? "bg-[#EEF2FF] text-[#5C5CFF]"
                   : "text-gray-500 hover:bg-gray-50"
               )}
             >
-              <Network size={16} />
+              <LayoutGrid size={16} />
             </button>
           </div>
 
@@ -4771,7 +4828,7 @@ export default function App() {
           {page==="attendance"&&<AttendancePage navigate={navigate} section={attendanceSection} onSectionChange={setAttendanceSection} activeTab={attendanceTab}/>}
           {page==="leave"&&<LeavePage navigate={navigate} section={leaveSection} onSectionChange={setLeaveSection} activeTab={leaveTab}/>}
           {page==="tasks"&&<TasksPage navigate={navigate} activeTab={tasksTab}/>}
-          {page==="employee-profile"&&<EmployeeProfilePage employee={selectedEmployee} navigate={navigate}/>}
+          {page==="employee-profile"&&<EmployeeProfilePage employee={selectedEmployee} navigate={navigate} origin={profileOrigin || undefined}/>}
           {page==="employee-add"&&<AddEmployeePage navigate={navigate}/>}
           {page==="documents"&&<DocumentsPage navigate={navigate} activeTab={documentsTab}/>}
           {page==="settings"&&<SettingsPage navigate={navigate} activeTab={settingsTab}/>}
