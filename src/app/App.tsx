@@ -1269,6 +1269,21 @@ const OrgTreeNode = ({
   );
 };
 
+const DEPT_INFO: Record<string, { head: string; location: string; details: string }> = {
+  Engineering: { head: "David Chen", location: "New York HQ", details: "Software development and infrastructure" },
+  Product: { head: "Marcus Johnson", location: "New York HQ", details: "Product management and strategy" },
+  Design: { head: "Priya Sharma", location: "New York HQ", details: "UX and visual design" },
+  Marketing: { head: "Carlos Rivera", location: "Austin Branch", details: "Brand and growth marketing" },
+  Finance: { head: "Jennifer Walsh", location: "New York HQ", details: "Finance and accounting" },
+  HR: { head: "Aisha Thompson", location: "New York HQ", details: "Human resources and people ops" },
+  Management: { head: "Alex Admin", location: "Chennai HQ", details: "Executive leadership and administration" },
+  Sales: { head: "James O'Brien", location: "San Francisco Branch", details: "Enterprise and growth sales" },
+};
+
+const depts = ["All",...Array.from(new Set(EMPLOYEES.map(e=>e.dept))).sort()];
+const desigs = ["All",...Array.from(new Set(EMPLOYEES.map(e=>e.designation))).sort()];
+const locations = ["All",...Array.from(new Set(EMPLOYEES.map(e=>e.branch))).sort()];
+
 function TeamPage({
   navigate,
   activeTab,
@@ -1281,7 +1296,11 @@ function TeamPage({
   setShowCreateTask,
   reporteesViewMode,
   showTeamFilter,
-  setShowTeamFilter
+  setShowTeamFilter,
+  deptFilter,
+  setDeptFilter,
+  locationFilter,
+  setLocationFilter
 }: {
   navigate: (p: AppPage, emp?: any, tabOrSection?: string) => void;
   activeTab: string;
@@ -1295,18 +1314,20 @@ function TeamPage({
   reporteesViewMode: "list" | "grid";
   showTeamFilter: boolean;
   setShowTeamFilter: (b: boolean) => void;
+  deptFilter: string;
+  setDeptFilter: (v: string) => void;
+  locationFilter: string;
+  setLocationFilter: (v: string) => void;
 }) {
-  const [tab, setTab] = useState("Members");
+  const [tab, setTab] = useState("Overview");
 
   // Sync activeTab to local tab state
   useEffect(() => {
     setTab(activeTab);
   }, [activeTab]);
 
-  const [deptFilter, setDeptFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [desigFilter, setDesigFilter] = useState("All");
-  const [locationFilter, setLocationFilter] = useState("All");
   const [selectedEmp, setSelectedEmp] = useState<Employee|null>(null);
   const [empTab, setEmpTab] = useState("Activities");
   const [feedPost, setFeedPost] = useState("");
@@ -1363,9 +1384,6 @@ function TeamPage({
   const filteredTeamAnn = TEAM_ANN;
   const teamAnnDetail = TEAM_ANN.find(a=>a.id===teamAnnDetailId)||null;
 
-  const depts = ["All",...Array.from(new Set(EMPLOYEES.map(e=>e.dept))).sort()];
-  const desigs = ["All",...Array.from(new Set(EMPLOYEES.map(e=>e.designation))).sort()];
-  const locations = ["All",...Array.from(new Set(EMPLOYEES.map(e=>e.branch))).sort()];
   const filtered = EMPLOYEES.filter(e=>{
     const ms = e.name.toLowerCase().includes(search.toLowerCase())||e.designation.toLowerCase().includes(search.toLowerCase());
     const md = deptFilter==="All"||e.dept===deptFilter;
@@ -1400,189 +1418,348 @@ function TeamPage({
     <div className="flex flex-col h-full bg-[#F7F8FA] overflow-hidden">
       <div className="flex-1 overflow-hidden">
 
-        {/* ── MEMBERS TAB ── */}
-        {tab==="Members"&&(
-          <div className="flex h-full overflow-hidden">
-            {/* Sidebar List */}
-            <div className={cn("flex flex-col bg-white border-r border-gray-200 transition-all duration-300",selectedEmp?"w-[350px] flex-shrink-0":"flex-1")}>
-              <div className="flex-1 overflow-auto divide-y divide-gray-100">
-                {filtered.map(e=>(
-                  <div key={e.id} onClick={()=>setSelectedEmp(e)} className={cn("p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors",selectedEmp?.id===e.id&&"bg-indigo-50/50 border-l-4 border-[#5C5CFF]")}>
-                    <Avt initials={e.initials} color={e.color} size="md"/>
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="flex justify-between items-center mb-0.5"><span className="text-xs font-semibold text-gray-800 truncate">{e.name}</span><StatusBadge status={e.status}/></div>
-                      <p className="text-[10px] text-gray-500 truncate">{e.designation} · {e.dept}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* ── OVERVIEW TAB ── */}
+        {tab==="Overview"&&(
+          (() => {
+            const teamMembers = deptFilter === "All" ? EMPLOYEES : EMPLOYEES.filter(e => e.dept === deptFilter);
+            const managerCount = teamMembers.filter(e => 
+              ["Manager", "VP", "Head", "Lead", "Director", "CEO", "CFO", "Admin"].some(word => e.designation.includes(word))
+            ).length;
+            const employeeCount = teamMembers.length - managerCount;
 
-            {/* Profile detail */}
-            {selectedEmp?(
-              <div className="flex-1 flex flex-col overflow-hidden bg-[#F7F8FA]">
-                <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
-                  <div className="flex items-center gap-3">
-                    <Avt initials={selectedEmp.initials} color={selectedEmp.color} size="md"/>
-                    <div className="text-left">
-                      <h3 className="text-sm font-semibold text-gray-900">{selectedEmp.name}</h3>
-                      <p className="text-xs text-gray-500 mt-0.5">{selectedEmp.designation} · {selectedEmp.dept}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Btn variant="outline" size="sm" onClick={()=>setShowEmailModal(true)}><Mail size={12}/>Email</Btn>
-                    <Btn variant="outline" size="sm" onClick={()=>setShowCallModal(true)}><Phone size={12}/>Call</Btn>
-                    <button onClick={()=>setSelectedEmp(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X size={14}/></button>
-                  </div>
-                </div>
-                <div className="flex-1 overflow-auto p-6 space-y-6">
-                  {/* Actions summary row */}
-                  <div className="grid grid-cols-4 gap-4">
-                    {[
-                      {label:"Schedule Shift",icon:Clock,color:"#3B82F6",bg:"bg-blue-50",onClick:()=>setShowAssignShift(true)},
-                      {label:"Assign Task",icon:ClipboardList,color:"#6366F1",bg:"bg-indigo-50",onClick:()=>setShowAssignTask(true)},
-                      {label:"View Profile",icon:User,color:"#22C55E",bg:"bg-green-50",onClick:()=>setEmpTab("Profile")},
-                      {label:"History Log",icon:Activity,color:"#F59E0B",bg:"bg-amber-50",onClick:()=>setEmpTab("Activities")}
-                    ].map(a=>(
-                      <button key={a.label} onClick={a.onClick} className={cn("rounded-xl p-3 border border-transparent hover:border-gray-200 transition-all flex flex-col items-center justify-center text-center",a.bg)}>
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center mb-2" style={{backgroundColor:a.color+"18"}}><a.icon size={15} style={{color:a.color}}/></div>
-                        <span className="text-[10px] font-semibold text-gray-800">{a.label}</span>
-                      </button>
-                    ))}
-                  </div>
+            // Stats
+            let presentCount = 0;
+            let leaveCount = 0;
+            let wfhCount = 0;
+            let absentCount = 0;
 
-                  {/* Tab Selector inside profile details */}
-                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                    <div className="px-4 border-b border-gray-100 flex gap-4">
-                      {["Activities","Profile","Attendance","Leave","Shift","Tasks"].map(t=>(
-                        <button key={t} onClick={()=>setEmpTab(t)} className={cn("py-3 text-xs font-semibold border-b-2 transition-colors",empTab===t?"border-[#5C5CFF] text-[#5C5CFF]":"border-transparent text-gray-500 hover:text-gray-700")}>{t}</button>
-                      ))}
-                    </div>
-                    <div className="p-4 overflow-auto max-h-[380px]">
-                      {empTab==="Activities"&&(
-                        <div className="space-y-3 max-w-xl">
-                          {[
-                            {icon:UserPlus,color:"#5C5CFF",text:`${selectedEmp.name} joined ${selectedEmp.dept}`,sub:"Employee onboarded",time:fmtDate(selectedEmp.joinDate)},
-                            {icon:CalendarDays,color:"#F59E0B",text:"Applied for 2 days sick leave",sub:"Approved by manager",time:"Jun 15, 2024"},
-                            {icon:Clock,color:"#22C55E",text:"Attendance regularization submitted",sub:"Late mark on Jun 12",time:"Jun 12, 2024"},
-                            {icon:GitBranch,color:"#8B5CF6",text:"Department updated",sub:`Moved to ${selectedEmp.dept}`,time:"Jan 10, 2024"},
-                            {icon:Award,color:"#F97316",text:"Designation updated",sub:`Promoted to ${selectedEmp.designation}`,time:"Nov 1, 2023"},
-                          ].map((a,i)=>(
-                            <div key={i} className="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-[#5C5CFF]/30 cursor-pointer transition-colors text-left">
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{backgroundColor:a.color+"18"}}><a.icon size={14} style={{color:a.color}}/></div>
-                              <div className="flex-1"><p className="text-xs font-medium text-gray-800">{a.text}</p><p className="text-[10px] text-gray-500 mt-0.5">{a.sub}</p></div>
-                              <span className="text-[10px] text-gray-400">{a.time}</span>
-                            </div>
-                          ))}
+            teamMembers.forEach(e => {
+              const att = getAttendanceDetails(e);
+              if (att.status === "Checked In" || att.status === "Late") {
+                presentCount++;
+              } else if (att.status === "On Leave") {
+                leaveCount++;
+              } else if (att.status === "WFH") {
+                wfhCount++;
+              } else {
+                absentCount++;
+              }
+            });
+
+            // Dept details lookup
+            const deptName = deptFilter === "All" ? "Acme Corp" : deptFilter;
+            const deptHead = DEPT_INFO[deptFilter]?.head || "Alex Admin";
+            const deptLoc = DEPT_INFO[deptFilter]?.location || "New York HQ";
+            const deptDesc = DEPT_INFO[deptFilter]?.details || "Global corporate office";
+
+            // Manager attention stats
+            const pendingLeaves = teamReqs.filter(r => {
+              const emp = EMPLOYEES.find(e => e.name === r.employee);
+              const deptMatch = deptFilter === "All" || (emp && emp.dept === deptFilter);
+              return deptMatch && r.status === "Pending";
+            }).length;
+
+            const attendanceExceptions = teamMembers.filter(e => {
+              const att = getAttendanceDetails(e);
+              return att.status === "Late";
+            }).length;
+
+            const overdueTasksCount = TEAM_TASKS.filter(t => {
+              const isDeptMatch = deptFilter === "All" || t.dept === deptFilter || (EMPLOYEES.find(e => e.name === t.assignee)?.dept === deptFilter);
+              return isDeptMatch && (t.status === "Overdue" || t.status === "Todo");
+            }).length;
+
+            // Events
+            const birthdays = TEAM_CELEBRATIONS.filter(e => e.type === "Birthday" && (deptFilter === "All" || EMPLOYEES.find(x => x.name === e.employee)?.dept === deptFilter));
+            const newHires = TEAM_CELEBRATIONS.filter(e => e.type === "New Joiner" && (deptFilter === "All" || EMPLOYEES.find(x => x.name === e.employee)?.dept === deptFilter));
+            const anniversaries = TEAM_CELEBRATIONS.filter(e => e.type === "Anniversary" && (deptFilter === "All" || EMPLOYEES.find(x => x.name === e.employee)?.dept === deptFilter));
+
+            // Availability
+            const upcomingAvailability = teamMembers
+              .map(emp => {
+                const leaves = teamReqs.filter(r => r.employee === emp.name && r.status === "Approved");
+                return leaves.map(l => ({
+                  date: new Date(l.from).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                  name: emp.name,
+                  type: l.type === "Sick" ? "Sick Leave" : l.type === "Casual" ? "Casual Leave" : "Annual Leave",
+                  color: emp.color,
+                  initials: emp.initials,
+                }));
+              })
+              .flat()
+              .slice(0, 3);
+
+            if (upcomingAvailability.length === 0) {
+              const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+              const dayAfter = new Date(); dayAfter.setDate(dayAfter.getDate() + 2);
+              
+              if (teamMembers.length > 0) {
+                upcomingAvailability.push({
+                  date: tomorrow.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                  name: teamMembers[0].name,
+                  type: "Work From Home",
+                  color: teamMembers[0].color,
+                  initials: teamMembers[0].initials,
+                });
+              }
+              if (teamMembers.length > 1) {
+                upcomingAvailability.push({
+                  date: dayAfter.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                  name: teamMembers[1].name,
+                  type: "Annual Leave",
+                  color: teamMembers[1].color,
+                  initials: teamMembers[1].initials,
+                });
+              }
+            }
+
+            return (
+              <div className="flex-1 overflow-auto p-6 bg-[#F7F8FA] text-left">
+                <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
+                  {/* LEFT COLUMN: Identity & Composition (1 col) */}
+                  <div className="lg:col-span-1 space-y-6">
+                    {/* Department Profile */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col items-center text-center">
+                      <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-[#5C5CFF] flex items-center justify-center text-2xl font-bold mb-4 border border-indigo-100 shadow-inner">
+                        {deptName[0]}
+                      </div>
+                      <h3 className="text-base font-bold text-gray-900">{deptName}</h3>
+                      <p className="text-xs text-gray-500 mt-1">{deptDesc}</p>
+                      
+                      <div className="w-full border-t border-gray-100 my-4" />
+                      
+                      <div className="w-full space-y-3 text-left">
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Department Head</p>
+                          <p className="text-xs font-semibold text-gray-800 mt-0.5">{deptHead}</p>
                         </div>
-                      )}
-                      {empTab==="Profile"&&(
-                        <div className="max-w-xl space-y-4 text-left">
-                          {[{title:"Personal Information",items:[["Full Name",selectedEmp.name],["Employee ID",selectedEmp.id],["Email",selectedEmp.email],["Phone",selectedEmp.phone],["Join Date",fmtDate(selectedEmp.joinDate)]]},{title:"Employment",items:[["Department",selectedEmp.dept],["Designation",selectedEmp.designation],["Branch",selectedEmp.branch],["Employment Type",selectedEmp.empType],["Shift",selectedEmp.shift]]},{title:"Reporting Structure",items:[["Reports To",selectedEmp.manager],["Team","Engineering Platform"]]},{title:"Emergency Contact",items:[["Name","Jane "+selectedEmp.name.split(" ")[1]],["Relationship","Spouse"],["Phone","+1 (555) 999-0001"]]}].map(s=>(
-                            <div key={s.title} className="bg-white border border-gray-200 rounded-xl p-4">
-                              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{s.title}</h4>
-                              <div className="grid grid-cols-2 gap-3">
-                                {s.items.map(([k,v])=>(
-                                  <div key={k}><p className="text-[10px] text-gray-400">{k}</p><p className="text-xs font-medium text-gray-800 mt-0.5">{v}</p></div>
-                                ))}
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Team Strength</p>
+                          <p className="text-xs font-semibold text-gray-800 mt-0.5">{teamMembers.length} employees</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Location</p>
+                          <p className="text-xs font-semibold text-gray-800 mt-0.5">{deptLoc}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Team Composition */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Team Composition</h4>
+                      <div className="space-y-2.5">
+                        <div className="flex justify-between text-xs font-medium">
+                          <span className="text-gray-500">Managers</span>
+                          <span className="text-gray-800">{managerCount}</span>
+                        </div>
+                        <div className="flex justify-between text-xs font-medium">
+                          <span className="text-gray-500">Employees</span>
+                          <span className="text-gray-800">{employeeCount}</span>
+                        </div>
+                        <div className="border-t border-gray-100 pt-2 flex justify-between text-xs font-bold">
+                          <span className="text-gray-900">Total</span>
+                          <span className="text-[#5C5CFF]">{teamMembers.length}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CENTER COLUMN: Team Today & Attendance Preview & Needs Attention (2 cols) */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* Team Today stats */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Team Today</h4>
+                        <span className="text-xs font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">{teamMembers.length} Team Members</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {[
+                          { label: "Present", count: presentCount, color: "text-green-600", bg: "bg-green-50/50" },
+                          { label: "On Leave", count: leaveCount, color: "text-purple-600", bg: "bg-purple-50/50" },
+                          { label: "WFH", count: wfhCount, color: "text-blue-600", bg: "bg-blue-50/50" },
+                          { label: "Not Checked In", count: absentCount, color: "text-gray-500", bg: "bg-gray-50/50" }
+                        ].map(stat => (
+                          <div key={stat.label} className={cn("p-4 rounded-xl text-center border border-transparent", stat.bg)}>
+                            <div className={cn("text-2xl font-bold", stat.color)}>{stat.count}</div>
+                            <div className="text-[10px] font-semibold text-gray-500 mt-1">{stat.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Team Attendance Preview */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Team Attendance</h4>
+                        <button
+                          onClick={() => { navigate("attendance"); setAttendanceSection("My Team"); }}
+                          className="text-xs font-semibold text-[#5C5CFF] hover:text-[#4B4BE3] transition-colors"
+                        >
+                          View all →
+                        </button>
+                      </div>
+                      <div className="divide-y divide-gray-150">
+                        {teamMembers.slice(0, 3).map(emp => {
+                          const att = getAttendanceDetails(emp);
+                          return (
+                            <div key={emp.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                              <Avt initials={emp.initials} color={emp.color} size="sm" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-gray-800 truncate">{emp.name}</p>
+                                <p className="text-[10px] text-gray-400 truncate mt-0.5">{emp.designation}</p>
+                              </div>
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <div className={cn("w-1.5 h-1.5 rounded-full", att.dotColor)} />
+                                <span className="text-[11px] font-medium text-gray-500">
+                                  {att.status === "Checked In" ? `Checked In · ${att.checkIn}` : att.status === "WFH" ? "Working remotely" : att.status}
+                                </span>
                               </div>
                             </div>
-                          ))}
+                          );
+                        })}
+                        {teamMembers.length === 0 && (
+                          <div className="text-center py-6 text-xs text-gray-400">No team members in this department</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Needs Attention */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Needs Attention</h4>
+                      {pendingLeaves === 0 && attendanceExceptions === 0 && overdueTasksCount === 0 ? (
+                        <div className="text-center py-6 text-xs text-gray-400">
+                          All caught up! No items require attention today.
                         </div>
-                      )}
-                      {empTab==="Attendance"&&(
-                        <div className="max-w-xl space-y-4">
-                          <div className="grid grid-cols-3 gap-3">
-                            {[["Present Days","22","of 26"],["Late Arrivals","2","this month"],["Attendance Rate",`${selectedEmp.attendance}%`,"Jun 2024"]].map(([t,v,s])=>(
-                              <div key={t as string} className="bg-white border border-gray-200 rounded-xl p-3 text-center"><p className="text-[10px] text-gray-400 mb-1">{t}</p><p className="text-lg font-bold text-gray-900">{v}</p><p className="text-[10px] text-gray-400">{s}</p></div>
-                            ))}
-                          </div>
-                          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between"><h4 className="text-xs font-semibold text-gray-700">Recent Log</h4><Btn variant="outline" size="sm"><Download size={11}/>Export</Btn></div>
-                            <table className="w-full text-xs text-left"><thead className="bg-gray-50"><tr>{["Date","Check In","Check Out","Hours","Status"].map(h=><th key={h} className="px-4 py-2 font-medium text-gray-500">{h}</th>)}</tr></thead>
-                            <tbody className="divide-y divide-gray-100">{[["Jun 28","09:02","18:15","9h 13m","Present"],["Jun 27","09:00","18:05","9h 05m","Present"],["Jun 26","09:45","18:30","8h 45m","Late"],["Jun 25","09:01","18:00","8h 59m","Present"],["Jun 21","–","–","–","On Leave"]].map(([d,ci,co,h,s])=>(
-                              <tr key={d as string} className="hover:bg-gray-50"><td className="px-4 py-2 text-gray-600">{d}</td><td className="px-4 py-2 font-mono">{ci}</td><td className="px-4 py-2 font-mono">{co}</td><td className="px-4 py-2 font-mono">{h}</td><td className="px-4 py-2"><StatusBadge status={s as string}/></td></tr>
-                            ))}</tbody></table>
-                          </div>
-                        </div>
-                      )}
-                      {empTab==="Leave"&&(
-                        <div className="max-w-xl space-y-4 text-left">
-                          <div className="bg-white border border-gray-200 rounded-xl p-4">
-                            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3">Balance</h4>
-                            {[["Annual",18,12],["Sick",10,8],["Casual",6,5]].map(([t,tot,used])=>(
-                              <div key={t as string} className="mb-3"><div className="flex justify-between text-xs mb-1"><span className="text-gray-600">{t}</span><span className="font-medium text-gray-800">{(tot as number)-(used as number)}/{tot} left</span></div><div className="bg-gray-100 rounded-full h-1.5"><div className="h-1.5 bg-[#5C5CFF] rounded-full" style={{width:`${((used as number)/(tot as number))*100}%`}}/></div></div>
-                            ))}
-                          </div>
-                          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                            <div className="px-4 py-3 border-b border-gray-100"><h4 className="text-xs font-semibold text-gray-700">Leave History</h4></div>
-                            {teamReqs.filter(r=>r.employee===selectedEmp.name).length>0
-                              ? teamReqs.filter(r=>r.employee===selectedEmp.name).map(r=>(
-                                <div key={r.id} className="px-4 py-3 border-b border-gray-100 last:border-0 flex items-center gap-3 hover:bg-gray-50">
-                                  <div className="flex-1"><p className="text-xs font-medium text-gray-800">{r.type}</p><p className="text-[10px] text-gray-500">{fmtDate(r.from)} → {fmtDate(r.to)} · {r.days}d · {r.reason}</p></div>
-                                  <StatusBadge status={r.status}/>
-                                </div>
-                              ))
-                              : <div className="px-4 py-6 text-center text-xs text-gray-400">No leave history</div>
-                            }
-                          </div>
-                        </div>
-                      )}
-                      {empTab==="Shift"&&(
-                        <div className="max-w-xl space-y-4 text-left">
-                          <div className="bg-white border border-gray-200 rounded-xl p-4">
-                            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3">Current Shift</h4>
-                            <div className="flex items-center gap-3 p-3 bg-[#EEF2FF] rounded-lg">
-                              <div className="w-9 h-9 rounded-lg bg-[#5C5CFF] flex items-center justify-center"><Clock size={16} className="text-white"/></div>
-                              <div><p className="text-sm font-semibold text-gray-800">{selectedEmp.shift} Shift</p><p className="text-xs text-gray-500">{selectedEmp.shift==="General"?"09:00 – 18:00":selectedEmp.shift==="Morning"?"06:00 – 15:00":selectedEmp.shift==="Night"?"22:00 – 07:00":"14:00 – 23:00"} · Mon–Fri</p></div>
+                      ) : (
+                        <div className="divide-y divide-gray-100">
+                          {pendingLeaves > 0 && (
+                            <div onClick={() => { setTeamTab("Approvals"); }} className="flex justify-between items-center py-3.5 cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors">
+                              <span className="text-xs text-gray-650 font-semibold hover:text-[#5C5CFF]">Leave requests</span>
+                              <span className="bg-red-50 text-red-500 font-semibold px-2 py-0.5 rounded text-[10px]">{pendingLeaves}</span>
                             </div>
-                          </div>
+                          )}
+                          {attendanceExceptions > 0 && (
+                            <div onClick={() => { navigate("attendance"); setAttendanceSection("My Team"); }} className="flex justify-between items-center py-3.5 cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors">
+                              <span className="text-xs text-gray-655 font-semibold hover:text-[#5C5CFF]">Attendance exceptions</span>
+                              <span className="bg-amber-50 text-amber-600 font-semibold px-2 py-0.5 rounded text-[10px]">{attendanceExceptions}</span>
+                            </div>
+                          )}
+                          {overdueTasksCount > 0 && (
+                            <div onClick={() => { setTeamTab("Tasks"); }} className="flex justify-between items-center py-3.5 cursor-pointer hover:bg-gray-50 px-2 rounded-lg transition-colors">
+                              <span className="text-xs text-gray-655 font-semibold hover:text-[#5C5CFF]">Overdue tasks</span>
+                              <span className="bg-blue-50 text-blue-600 font-semibold px-2 py-0.5 rounded text-[10px]">{overdueTasksCount}</span>
+                            </div>
+                          )}
                         </div>
                       )}
-                      {empTab==="Tasks"&&(
-                        <div className="max-w-2xl space-y-4 text-left">
-                          <div className="grid grid-cols-4 gap-3">
-                            {[
-                              {label:"In Progress",count:2,color:"#3B82F6",bg:"bg-blue-50"},
-                              {label:"Assigned",count:3,color:"#6366F1",bg:"bg-indigo-50"},
-                              {label:"Completed",count:8,color:"#22C55E",bg:"bg-green-50"},
-                              {label:"Overdue",count:1,color:"#EF4444",bg:"bg-red-50"},
-                            ].map(s=>(
-                              <div key={s.label} className={cn("rounded-xl p-3 border",s.bg,"border-transparent")}>
-                                <div className="text-xl font-bold" style={{color:s.color}}>{s.count}</div>
-                                <div className="text-[10px] font-medium text-gray-500 mt-0.5">{s.label}</div>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                              <h4 className="text-xs font-semibold text-gray-700">Active Tasks</h4>
-                              <button onClick={()=>setShowAssignTask(true)} className="text-xs text-[#5C5CFF] hover:underline">Assign Task →</button>
-                            </div>
-                            <div className="divide-y divide-gray-100">
-                              {TEAM_TASKS.filter(t=>t.assignee===selectedEmp.name).slice(0,5).map(t=>(
-                                <div key={t.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
-                                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{backgroundColor:t.status==="Done"?"#22C55E":t.status==="Overdue"?"#EF4444":t.status==="In Progress"?"#3B82F6":"#9CA3AF"}}/>
-                                  <div className="flex-1 min-w-0">
-                                    <p className={cn("text-xs font-medium text-gray-800 truncate",t.status==="Done"&&"line-through text-gray-400")}>{t.title}</p>
-                                    <p className="text-[10px] text-gray-400 mt-0.5">Due {t.due} · {t.dept}</p>
+                    </div>
+                  </div>
+
+                  {/* RIGHT COLUMN: Events & Calendar (1 col) */}
+                  <div className="lg:col-span-1 space-y-6">
+                    {/* Upcoming Events */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Upcoming</h4>
+                      
+                      <div className="space-y-4">
+                        {/* Birthdays */}
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Birthdays</p>
+                          {birthdays.length > 0 ? (
+                            birthdays.map((e, idx) => {
+                              const emp = EMPLOYEES.find(x => x.name === e.employee);
+                              return (
+                                <div key={idx} className="flex items-center gap-2.5 py-1.5">
+                                  <Avt initials={emp?.initials || "E"} color={emp?.color || "#5C5CFF"} size="xs" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-semibold text-gray-800 truncate">{e.employee}</p>
+                                    <p className="text-[10px] text-gray-400 mt-0.5">{e.detail}</p>
                                   </div>
-                                  <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0",
-                                    t.priority==="High"?"bg-red-50 text-red-500":t.priority==="Medium"?"bg-amber-50 text-amber-500":"bg-gray-100 text-gray-400")}>{t.priority}</span>
-                                  <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0",
-                                    t.status==="Done"?"bg-green-50 text-green-600":t.status==="Overdue"?"bg-red-50 text-red-500":t.status==="In Progress"?"bg-blue-50 text-blue-600":"bg-gray-100 text-gray-500")}>{t.status}</span>
                                 </div>
-                              ))}
+                              );
+                            })
+                          ) : (
+                            <p className="text-xs text-gray-400 italic">No upcoming birthdays</p>
+                          )}
+                        </div>
+
+                        {/* New Hires */}
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">New Hires</p>
+                          {newHires.length > 0 ? (
+                            newHires.map((e, idx) => {
+                              const emp = EMPLOYEES.find(x => x.name === e.employee);
+                              return (
+                                <div key={idx} className="flex items-center gap-2.5 py-1.5">
+                                  <Avt initials={emp?.initials || "E"} color={emp?.color || "#5C5CFF"} size="xs" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-semibold text-gray-800 truncate">{e.employee}</p>
+                                    <p className="text-[10px] text-gray-400 mt-0.5">{e.detail}</p>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <p className="text-xs text-gray-400 italic">No new hires</p>
+                          )}
+                        </div>
+
+                        {/* Anniversaries */}
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Work Anniversaries</p>
+                          {anniversaries.length > 0 ? (
+                            anniversaries.map((e, idx) => {
+                              const emp = EMPLOYEES.find(x => x.name === e.employee);
+                              return (
+                                <div key={idx} className="flex items-center gap-2.5 py-1.5">
+                                  <Avt initials={emp?.initials || "E"} color={emp?.color || "#5C5CFF"} size="xs" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-semibold text-gray-800 truncate">{e.employee}</p>
+                                    <p className="text-[10px] text-gray-400 mt-0.5">{e.detail}</p>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <p className="text-xs text-gray-400 italic">No upcoming anniversaries</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Team Availability */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Team Availability</h4>
+                      <div className="space-y-3">
+                        {upcomingAvailability.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-2.5 py-1">
+                            <span className="text-[10px] font-bold text-gray-400 bg-gray-50 border border-gray-150 rounded px-1.5 py-0.5 flex-shrink-0 w-12 text-center">
+                              {item.date}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-semibold text-gray-800 truncate">{item.name}</p>
+                              <p className="text-[10px] text-gray-505 mt-0.5">{item.type}</p>
                             </div>
                           </div>
-                        </div>
-                      )}
+                        ))}
+                        {upcomingAvailability.length === 0 && (
+                          <p className="text-xs text-gray-400 italic py-2">No leaves scheduled</p>
+                        )}
+                      </div>
+                      <div className="border-t border-gray-100 mt-4 pt-3 text-center">
+                        <button
+                          onClick={() => { navigate("leave"); setLeaveSection("Calendar"); }}
+                          className="text-xs font-semibold text-[#5C5CFF] hover:underline"
+                        >
+                          View team calendar →
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            ) : null}
-          </div>
+            );
+          })()
         )}
 
         {/* ── FEED TAB ── */}
@@ -4173,11 +4350,13 @@ export default function App() {
   const [settingsTab, setSettingsTab] = useState<string>("General");
 
   // Lifted child views & filter toolbar states
-  const [teamTab, setTeamTab] = useState<string>("Members");
+  const [teamTab, setTeamTab] = useState<string>("Overview");
   const [orgTab, setOrgTab] = useState<string>("Overview");
   const [supportTab, setSupportTab] = useState<string>("Home");
   const [attPeriod, setAttPeriod] = useState<"Weekly" | "Monthly" | "Yearly">("Monthly");
   const [checkedIn, setCheckedIn] = useState<boolean>(true);
+  const [teamDeptFilter, setTeamDeptFilter] = useState<string>("All");
+  const [teamLocationFilter, setTeamLocationFilter] = useState<string>("All");
   const [reporteesViewMode, setReporteesViewMode] = useState<"list"|"grid">(
     () => (sessionStorage.getItem("reportees_view_mode") as "list"|"grid") || "list"
   );
@@ -4347,7 +4526,7 @@ export default function App() {
     activeHeaderTab = leaveTab;
     onHeaderTabChange = setLeaveTab;
   } else if (page === "team") {
-    headerTabs = ["Members", "Feed", "Announcements", "Reportees", "Approvals", "Tasks"];
+    headerTabs = ["Overview", "Reportees", "Approvals", "Tasks", "Feed", "Announcements"];
     activeHeaderTab = teamTab;
     onHeaderTabChange = setTeamTab;
   } else if (page === "organization") {
@@ -4507,32 +4686,28 @@ export default function App() {
       </>
     );
   } else if (page === "team") {
-    if (teamTab === "Members") {
+    if (teamTab === "Overview") {
       headerToolbar = (
         <>
-          <div className="relative w-64 h-[38px] flex items-center gap-2 px-3 bg-[#F6F7F9] border border-[#E8E9ED] rounded-[9px]">
-            <Search size={14} className="text-[#9CA0AB] flex-shrink-0" />
-            <input
-              type="text"
-              placeholder="Search Members..."
-              value={teamSearch}
-              onChange={(e) => setTeamSearch(e.target.value)}
-              className="w-full bg-transparent text-[13px] text-[#16181D] placeholder-[#9CA0AB] outline-none"
-            />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Team / Department:</span>
+            <select
+              value={teamDeptFilter}
+              onChange={(e) => setTeamDeptFilter(e.target.value)}
+              className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-[10px] h-[38px] px-3 text-xs font-semibold text-gray-800 outline-none cursor-pointer focus:border-[#5C5CFF]/30 transition-colors"
+            >
+              {depts.map(d => (
+                <option key={d} value={d}>{d === "All" ? "All Departments" : d}</option>
+              ))}
+            </select>
           </div>
           <div className="flex-1" />
           <button
             onClick={() => setShowTeamFilter(true)}
             className="h-10 w-10 flex items-center justify-center p-0 rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] hover:bg-gray-50 transition-colors"
+            title="Filters"
           >
             <SlidersHorizontal size={16} />
-          </button>
-          <button
-            onClick={() => navigate("employee-add")}
-            className="h-10 px-[18px] rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] text-[14px] font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors"
-          >
-            <Plus size={16} strokeWidth={2.2} />
-            Add Employee
           </button>
         </>
       );
@@ -4823,7 +4998,7 @@ export default function App() {
         />
         <main className="flex-1 overflow-auto bg-[#F7F8FA]">
           {page==="my-space"&&<MySpacePage navigate={navigate} activeTab={mySpaceTab}/>}
-          {page==="team"&&<TeamPage navigate={navigate} activeTab={teamTab} search={teamSearch} showCreatePost={showCreatePost} setShowCreatePost={setShowCreatePost} showCreateAnnouncement={showCreateAnnouncement} setShowCreateAnnouncement={setShowCreateAnnouncement} showCreateTask={showCreateTask} setShowCreateTask={setShowCreateTask} reporteesViewMode={reporteesViewMode} showTeamFilter={showTeamFilter} setShowTeamFilter={setShowTeamFilter}/>}
+          {page==="team"&&<TeamPage navigate={navigate} activeTab={teamTab} search={teamSearch} showCreatePost={showCreatePost} setShowCreatePost={setShowCreatePost} showCreateAnnouncement={showCreateAnnouncement} setShowCreateAnnouncement={setShowCreateAnnouncement} showCreateTask={showCreateTask} setShowCreateTask={setShowCreateTask} reporteesViewMode={reporteesViewMode} showTeamFilter={showTeamFilter} setShowTeamFilter={setShowTeamFilter} deptFilter={teamDeptFilter} setDeptFilter={setTeamDeptFilter} locationFilter={teamLocationFilter} setLocationFilter={setTeamLocationFilter}/>}
           {page==="organization"&&<OrganizationPage navigate={navigate} onSelectEmployee={e=>navigate("employee-profile",e)} activeTab={orgTab} onTabChange={setOrgTab} showTeamFilter={showTeamFilter} setShowTeamFilter={setShowTeamFilter} search={orgSearch}/>}
           {page==="attendance"&&<AttendancePage navigate={navigate} section={attendanceSection} onSectionChange={setAttendanceSection} activeTab={attendanceTab}/>}
           {page==="leave"&&<LeavePage navigate={navigate} section={leaveSection} onSectionChange={setLeaveSection} activeTab={leaveTab}/>}
