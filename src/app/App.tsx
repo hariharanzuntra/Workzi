@@ -4205,7 +4205,7 @@ export default function App() {
       setTeamSection(tabOrSection as any);
     }
     if(p === "organization" && tabOrSection) {
-      setOrgSection(tabOrSection as any);
+      setOrgTab(tabOrSection);
     }
     setPage(p);
     setNotifOpen(false);
@@ -4226,13 +4226,7 @@ export default function App() {
     }
   }, [teamSection]);
 
-  useEffect(() => {
-    if (orgSection === "Overview") {
-      setOrgTab("Overview");
-    } else {
-      setOrgTab("Policies");
-    }
-  }, [orgSection]);
+    // Synchronized flat tabs directly
 
   if(page==="login") return <LoginPage onLogin={()=>setPage("admin-account")}/>;
   if(page==="admin-account") return <CreateAdminAccountPage onContinue={()=>setPage("getting-started")} onBack={()=>setPage("login")}/>;
@@ -4275,13 +4269,7 @@ export default function App() {
       />
     );
   } else if (page === "organization") {
-    workspaceSwitch = (
-      <SegmentedControl
-        items={["Overview", "Management"] as const}
-        activeItem={orgSection}
-        onChange={setOrgSection}
-      />
-    );
+    workspaceSwitch = null;
   }
 
   // Row 2 Tabs
@@ -4306,9 +4294,7 @@ export default function App() {
     activeHeaderTab = teamTab;
     onHeaderTabChange = setTeamTab;
   } else if (page === "organization") {
-    headerTabs = orgSection === "Overview" 
-      ? ["Overview", "Employees", "Departments", "Operations"] 
-      : ["Policies", "Access Control", "Announcements", "Reports"];
+    headerTabs = ["Overview", "Employees", "Employee Tree", "Departments", "Operations", "Policies", "Announcements", "Reports"];
     activeHeaderTab = orgTab;
     onHeaderTabChange = setOrgTab;
   } else if (page === "tasks") {
@@ -4423,13 +4409,14 @@ export default function App() {
       </>
     );
   } else if (page === "organization") {
+    const isTree = orgTab === "Employee Tree";
     headerToolbar = (
       <>
         <div className="relative w-64 h-[38px] flex items-center gap-2 px-3 bg-[#F6F7F9] border border-[#E8E9ED] rounded-[9px]">
           <Search size={14} className="text-[#9CA0AB] flex-shrink-0" />
           <input
             type="text"
-            placeholder="Search..."
+            placeholder={isTree ? "Search employees..." : "Search..."}
             value={orgSearch}
             onChange={(e) => setOrgSearch(e.target.value)}
             className="w-full bg-transparent text-[13px] text-[#16181D] placeholder-[#9CA0AB] outline-none"
@@ -4438,24 +4425,28 @@ export default function App() {
         <div className="flex-1" />
         <button
           onClick={() => setShowTeamFilter(true)}
+          title="Filter"
           className="h-10 w-10 flex items-center justify-center p-0 rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] hover:bg-gray-50 transition-colors"
         >
           <SlidersHorizontal size={16} />
         </button>
         <button
-          onClick={() => attMsg("Organization directory exported")}
+          onClick={() => attMsg(isTree ? "Employee Tree structure exported" : "Organization directory exported")}
+          title="Export"
           className="h-10 px-[18px] rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] text-[14px] font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors"
         >
           <Download size={16} />
           Export
         </button>
-        <button
-          onClick={() => navigate("employee-add")}
-          className="h-10 px-[18px] rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] text-[14px] font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors"
-        >
-          <Plus size={16} strokeWidth={2.2} />
-          Add Employee
-        </button>
+        {!isTree && (
+          <button
+            onClick={() => navigate("employee-add")}
+            className="h-10 px-[18px] rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] text-[14px] font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors"
+          >
+            <Plus size={16} strokeWidth={2.2} />
+            Add Employee
+          </button>
+        )}
       </>
     );
   } else if (page === "team") {
@@ -4776,7 +4767,7 @@ export default function App() {
         <main className="flex-1 overflow-auto bg-[#F7F8FA]">
           {page==="my-space"&&<MySpacePage navigate={navigate} activeTab={mySpaceTab}/>}
           {page==="team"&&<TeamPage navigate={navigate} activeTab={teamTab} search={teamSearch} showCreatePost={showCreatePost} setShowCreatePost={setShowCreatePost} showCreateAnnouncement={showCreateAnnouncement} setShowCreateAnnouncement={setShowCreateAnnouncement} showCreateTask={showCreateTask} setShowCreateTask={setShowCreateTask} reporteesViewMode={reporteesViewMode} showTeamFilter={showTeamFilter} setShowTeamFilter={setShowTeamFilter}/>}
-          {page==="organization"&&<OrganizationPage navigate={navigate} onSelectEmployee={e=>navigate("employee-profile",e)} section={orgSection} onSectionChange={setOrgSection}/>}
+          {page==="organization"&&<OrganizationPage navigate={navigate} onSelectEmployee={e=>navigate("employee-profile",e)} activeTab={orgTab} onTabChange={setOrgTab} showTeamFilter={showTeamFilter} setShowTeamFilter={setShowTeamFilter} search={orgSearch}/>}
           {page==="attendance"&&<AttendancePage navigate={navigate} section={attendanceSection} onSectionChange={setAttendanceSection} activeTab={attendanceTab}/>}
           {page==="leave"&&<LeavePage navigate={navigate} section={leaveSection} onSectionChange={setLeaveSection} activeTab={leaveTab}/>}
           {page==="tasks"&&<TasksPage navigate={navigate} activeTab={tasksTab}/>}

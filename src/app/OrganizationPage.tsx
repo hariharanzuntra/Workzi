@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Users, Clock, FileText, Megaphone, BarChart2, Search, Plus, Download, Upload,
   MoreHorizontal, Check, X, ChevronDown, ArrowUpRight, UserPlus, Building2,
@@ -13,7 +13,8 @@ import {
 } from "recharts";
 import {
   cn, fmtDate, AppPage, Employee,
-  EMPLOYEES, DEPT_DIST, ATT_TREND, HEADCOUNT_TREND, LEAVE_MONTHLY, DOCUMENTS_LIST, EMP_COLORS
+  EMPLOYEES, DEPT_DIST, ATT_TREND, HEADCOUNT_TREND, LEAVE_MONTHLY, DOCUMENTS_LIST, EMP_COLORS,
+  ATTENDANCE_RECORDS
 } from "./data";
 import { Avt, StatusBadge, Btn, KPICard, Modal, TabBar, InputField, SelectField } from "./ui";
 
@@ -593,51 +594,572 @@ export function AddEmployeeWizard({ onClose, onDone }: { onClose:()=>void; onDon
   );
 }
 
-export function OrganizationPage({ navigate, onSelectEmployee, section, onSectionChange }: {
-  navigate:(p:AppPage)=>void;
-  onSelectEmployee:(e:Employee)=>void;
-  section?: "Overview" | "Management";
-  onSectionChange?: (s: "Overview" | "Management") => void;
+const getAttendanceDetails = (emp: Employee) => {
+  const record = ATTENDANCE_RECORDS.find(r => r.id === emp.id || r.name === emp.name);
+  if (record) {
+    let status = record.status;
+    let displayStatus = "Checked Out";
+    let dotColor = "bg-gray-300";
+    
+    if (status === "Present") {
+      displayStatus = "Checked In";
+      dotColor = "bg-green-500 animate-pulse";
+    } else if (status === "Late") {
+      displayStatus = "Late";
+      dotColor = "bg-amber-500";
+    } else if (status === "WFH") {
+      displayStatus = "WFH";
+      dotColor = "bg-blue-500";
+    } else if (status === "On Leave") {
+      displayStatus = "On Leave";
+      dotColor = "bg-purple-500";
+    } else if (status === "Absent") {
+      displayStatus = "Checked Out";
+      dotColor = "bg-gray-300";
+    }
+    
+    return {
+      status: displayStatus,
+      dotColor,
+      checkIn: record.checkIn !== "–" ? record.checkIn + " AM" : "–",
+      workingHours: record.hours > 0 ? `${Math.floor(record.hours)}h ${Math.round((record.hours % 1) * 60)}m` : "–"
+    };
+  }
+  
+  let displayStatus = "Checked Out";
+  let dotColor = "bg-gray-300";
+  if (emp.status === "On Leave") {
+    displayStatus = "On Leave";
+    dotColor = "bg-purple-500";
+  } else if (emp.status === "Active") {
+    displayStatus = "Checked In";
+    dotColor = "bg-green-500 animate-pulse";
+  }
+  
+  return {
+    status: displayStatus,
+    dotColor,
+    checkIn: "09:00 AM",
+    workingHours: "8h 00m"
+  };
+};
+
+const getVisibleEmployeesForOrg = (filteredEmployees: Employee[], allEmployees: Employee[]) => {
+  const visible = new Set<string>();
+  
+  filteredEmployees.forEach(emp => {
+    visible.add(emp.id);
+    
+    let current = emp;
+    while (current) {
+      const manager = allEmployees.find(e => e.name === current.manager || (current.manager === "CEO" && e.id === "CEO-ROOT"));
+      if (manager && !visible.has(manager.id)) {
+        visible.add(manager.id);
+        current = manager;
+      } else {
+        break;
+      }
+    }
+  });
+  
+  return allEmployees.filter(e => visible.has(e.id));
+};
+
+// ── Employee Tree Page Component ──
+function EmployeeTreeTab({
+  showTeamFilter,
+  setShowTeamFilter,
+  searchTerm,
+  navigate,
+  setTab,
+  setActiveEmp
+}: {
+  showTeamFilter: boolean;
+  setShowTeamFilter: (b: boolean) => void;
+  searchTerm: string;
+  navigate: (p: AppPage) => void;
+  setTab: (t: string) => void;
+  setActiveEmp: (emp: Employee) => void;
 }) {
-  const [localContext, setLocalContext] = useState<"Overview"|"Management">("Overview");
-  const context = section || localContext;
-  const setContext = onSectionChange || setLocalContext;
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 45, y: 200 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [selectedNode, setSelectedNode] = useState<Employee | null>(null);
 
-  const overviewTabs = ["Overview", "Reports", "Announcements"] as const;
-  const managementTabs = ["Employees", "Departments", "Operations", "Policies", "Access Control"] as const;
+  const [treeDept, setTreeDept] = useState("All");
+  const [treeBranch, setTreeBranch] = useState("All");
+  const [treeDesig, setTreeDesig] = useState("All");
+  const [treeStatus, setTreeStatus] = useState("All");
 
-  const [tabInternal, setTabInternal] = useState("Overview");
-  const tab = tabInternal;
-  const setTab = (newTab: string) => {
-    setTabInternal(newTab);
-    if (overviewTabs.includes(newTab as any)) {
-      setContext("Overview");
-    } else if (managementTabs.includes(newTab as any)) {
-      setContext("Management");
+  const getFullOrgData = () => {
+    const all = [...EMPLOYEES];
+    if (!all.some(e => e.name === "Emily Rodriguez")) {
+      all.push({
+        id: "V001",
+        name: "Emily Rodriguez",
+        email: "emily.r@acmecorp.com",
+        phone: "+1 (555) 019-2837",
+        dept: "Product",
+        designation: "Head of Product",
+        status: "Active",
+        shift: "General",
+        joinDate: "2016-03-01",
+        manager: "CEO",
+        branch: "New York HQ",
+        empType: "Full-Time",
+        initials: "ER",
+        attendance: 98.0,
+        color: "#8B5CF6"
+      });
+    }
+    if (!all.some(e => e.id === "CEO-ROOT")) {
+      all.push({
+        id: "CEO-ROOT",
+        name: "CEO / Organization Head",
+        email: "ceo@acmecorp.com",
+        phone: "+1 (555) 100-0000",
+        dept: "Executive",
+        designation: "Chief Executive Officer",
+        status: "Active",
+        shift: "General",
+        joinDate: "2015-01-01",
+        manager: "",
+        branch: "New York HQ",
+        empType: "Full-Time",
+        initials: "CEO",
+        attendance: 100,
+        color: "#1F2937"
+      });
+    }
+    return all;
+  };
+
+  const allNodes = getFullOrgData();
+
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    allNodes.forEach(e => {
+      const hasReports = allNodes.some(x => x.manager === e.name || (e.id === "CEO-ROOT" && x.manager === "CEO"));
+      if (hasReports) {
+        initial[e.id] = true;
+      }
+    });
+    return initial;
+  });
+
+  const [activeSearchId, setActiveSearchId] = useState<string | null>(null);
+
+  const allDepts = ["All", ...Array.from(new Set(EMPLOYEES.map(e => e.dept))).sort()];
+  const allBranches = ["All", ...Array.from(new Set(EMPLOYEES.map(e => e.branch))).sort()];
+  const allDesigs = ["All", ...Array.from(new Set(EMPLOYEES.map(e => e.designation))).sort()];
+
+  // Filter tree nodes dynamically
+  const filteredTreeNodes = allNodes.filter(e => {
+    if (e.id === "CEO-ROOT") return true;
+    const md = treeDept === "All" || e.dept === treeDept;
+    const mb = treeBranch === "All" || e.branch === treeBranch;
+    const mdg = treeDesig === "All" || e.designation === treeDesig;
+    const ms = treeStatus === "All" || e.status === treeStatus;
+    return md && mb && mdg && ms;
+  });
+
+  const visibleList = getVisibleEmployeesForOrg(filteredTreeNodes, allNodes);
+  const roots = visibleList.filter(e => e.id === "CEO-ROOT");
+
+  const expandAll = (employees: Employee[]) => {
+    const updated: Record<string, boolean> = {};
+    employees.forEach(e => {
+      updated[e.id] = true;
+    });
+    setExpandedNodes(updated);
+  };
+
+  const collapseAll = () => {
+    setExpandedNodes({});
+  };
+
+  const toggleExpandNode = (id: string) => {
+    setExpandedNodes(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleNodeClick = (node: Employee) => {
+    setSelectedNode(node);
+  };
+
+  const focusNode = (id: string) => {
+    const el = document.getElementById(`node-${id}`);
+    const container = document.getElementById("canvas-viewport");
+    if (el && container) {
+      const containerRect = container.getBoundingClientRect();
+      const nodeRect = el.getBoundingClientRect();
+      const dx = (containerRect.left + containerRect.width / 2) - (nodeRect.left + nodeRect.width / 2);
+      const dy = (containerRect.top + containerRect.height / 2) - (nodeRect.top + nodeRect.height / 2);
+      setPan(prev => ({
+        x: prev.x + dx,
+        y: prev.y + dy
+      }));
     }
   };
 
-  const handleContextChange = (c: "Overview" | "Management") => {
-    setContext(c);
-    if (c === "Overview") {
-      setTabInternal("Overview");
+  useEffect(() => {
+    if (searchTerm.trim().length > 1) {
+      const match = allNodes.find(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      if (match) {
+        setActiveSearchId(match.id);
+      } else {
+        setActiveSearchId(null);
+      }
     } else {
-      setTabInternal("Employees");
+      setActiveSearchId(null);
     }
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (activeSearchId) {
+      setExpandedNodes(prev => {
+        const next = { ...prev };
+        let curr = allNodes.find(e => e.id === activeSearchId);
+        while (curr) {
+          const manager = allNodes.find(e => e.name === curr.manager || (curr.manager === "CEO" && e.id === "CEO-ROOT"));
+          if (manager) {
+            next[manager.id] = true;
+            curr = manager;
+          } else {
+            break;
+          }
+        }
+        return next;
+      });
+      setTimeout(() => {
+        focusNode(activeSearchId);
+      }, 100);
+    }
+  }, [activeSearchId]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button") || target.closest("input") || target.closest("select")) return;
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
   };
 
-  // Sync tab with external section changes (e.g. sidebar navigation)
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPan({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  return (
+    <div className="flex flex-1 overflow-hidden relative bg-[#F7F8FA] p-6 text-left">
+      <div 
+        id="canvas-viewport"
+        className={cn(
+          "relative w-full h-full border border-gray-200 rounded-xl bg-slate-50 overflow-hidden select-none shadow-inner",
+          isDragging ? "cursor-grabbing" : "cursor-grab"
+        )}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        {/* Floating Canvas Controls */}
+        <div className="absolute left-4 bottom-4 bg-white/95 backdrop-blur border border-gray-205 rounded-lg p-1.5 shadow-md z-10 flex items-center gap-1.5">
+          <button onClick={() => setZoom(z => Math.min(2, z + 0.1))} title="Zoom In" className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded font-bold text-sm transition-colors">+</button>
+          <button onClick={() => setZoom(z => Math.max(0.4, z - 0.1))} title="Zoom Out" className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded font-bold text-sm transition-colors">−</button>
+          <div className="w-px h-4 bg-gray-205" />
+          <button onClick={() => { setZoom(1); setPan({ x: 45, y: 200 }); }} title="Reset View" className="px-2 h-7 flex items-center justify-center text-xs text-gray-600 hover:bg-gray-100 rounded font-medium transition-colors">Reset</button>
+          <button onClick={() => { setZoom(0.75); setPan({ x: 20, y: 120 }); }} title="Fit to Screen" className="px-2 h-7 flex items-center justify-center text-xs text-gray-600 hover:bg-gray-100 rounded font-medium transition-colors">Fit</button>
+          <div className="w-px h-4 bg-gray-205" />
+          <button onClick={() => expandAll(allNodes)} className="px-2 h-7 flex items-center justify-center text-xs text-gray-600 hover:bg-gray-100 rounded font-medium transition-colors">Expand All</button>
+          <button onClick={collapseAll} className="px-2 h-7 flex items-center justify-center text-xs text-gray-600 hover:bg-gray-100 rounded font-medium transition-colors">Collapse All</button>
+        </div>
+
+        {/* Transform Container */}
+        <div 
+          className="absolute origin-top-left"
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          }}
+        >
+          <div className="p-16 flex items-center">
+            {roots.map(root => (
+              <HorizontalTreeNode
+                key={root.id}
+                node={root}
+                allNodes={visibleList}
+                expandedNodes={expandedNodes}
+                toggleExpand={toggleExpandNode}
+                onSelect={handleNodeClick}
+                activeSearchId={activeSearchId}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Floating Side Panel Details */}
+      {selectedNode && (
+        <div className="absolute right-6 top-6 bottom-6 w-80 bg-white border border-gray-250 rounded-xl shadow-xl z-20 flex flex-col text-left">
+          {/* Header */}
+          <div className="px-5 py-4 border-b border-gray-150 flex items-center justify-between flex-shrink-0">
+            <h3 className="text-sm font-bold text-gray-900">Employee Details</h3>
+            <button 
+              onClick={() => setSelectedNode(null)} 
+              className="text-gray-400 hover:text-gray-650 p-1.5 rounded hover:bg-gray-100 transition-all"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          
+          {/* Body */}
+          <div className="flex-1 overflow-auto p-5 space-y-4">
+            <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+              <Avt initials={selectedNode.initials} color={selectedNode.color} size="lg" />
+              <div className="min-w-0">
+                <h4 className="text-sm font-semibold text-gray-900 truncate">{selectedNode.name}</h4>
+                <p className="text-xs text-gray-500 truncate">{selectedNode.designation}</p>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              {[
+                ["Department", selectedNode.dept],
+                ["Location / Branch", selectedNode.branch],
+                ["Manager", selectedNode.manager || "CEO"],
+                ["Attendance Status", getAttendanceDetails(selectedNode).status],
+                ["Direct Reportees", allNodes.filter(e => e.manager === selectedNode.name || (selectedNode.id === "CEO-ROOT" && e.manager === "CEO")).length.toString()]
+              ].map(([k, v]) => (
+                <div key={k} className="flex flex-col gap-0.5 bg-gray-50 rounded-lg p-2.5">
+                  <span className="text-[10px] text-gray-400 uppercase font-semibold tracking-wider">{k}</span>
+                  <span className="text-xs font-semibold text-gray-800 mt-0.5">{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Actions footer */}
+          <div className="p-4 border-t border-gray-150 bg-gray-50 flex flex-col gap-2 flex-shrink-0 rounded-b-xl">
+            <Btn 
+              onClick={() => {
+                if (selectedNode.id === "CEO-ROOT" || selectedNode.id === "V001") {
+                  alert("This is a system/virtual employee node.");
+                  return;
+                }
+                setTab("Employees");
+                setActiveEmp(selectedNode);
+              }} 
+              className="w-full justify-center text-xs"
+            >
+              View Profile
+            </Btn>
+            <Btn 
+              variant="outline" 
+              onClick={() => {
+                if (selectedNode.id === "CEO-ROOT" || selectedNode.id === "V001") {
+                  alert("This is a system/virtual employee node.");
+                  return;
+                }
+                setTab("Employees");
+                setActiveEmp(selectedNode);
+              }} 
+              className="w-full justify-center text-xs"
+            >
+              View Attendance
+            </Btn>
+          </div>
+        </div>
+      )}
+
+      {/* ── Filters Modal ── */}
+      {showTeamFilter && (
+        <Modal title="Filter Employee Tree" onClose={() => setShowTeamFilter(false)} width="max-w-md">
+          <div className="space-y-4 text-left">
+            <SelectField
+              label="Department"
+              options={allDepts}
+              value={treeDept}
+              onChange={setTreeDept}
+            />
+            <SelectField
+              label="Location"
+              options={allBranches}
+              value={treeBranch}
+              onChange={setTreeBranch}
+            />
+            <SelectField
+              label="Designation"
+              options={allDesigs}
+              value={treeDesig}
+              onChange={setTreeDesig}
+            />
+            <SelectField
+              label="Employment Status"
+              options={["All", "Active", "On Leave", "Inactive"]}
+              value={treeStatus}
+              onChange={setTreeStatus}
+            />
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-150">
+              <Btn variant="outline" size="sm" onClick={() => {
+                setTreeDept("All");
+                setTreeBranch("All");
+                setTreeDesig("All");
+                setTreeStatus("All");
+                setShowTeamFilter(false);
+              }}>Reset</Btn>
+              <Btn size="sm" onClick={() => setShowTeamFilter(false)}>Apply Filters</Btn>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── Horizontal Tree Node Component ──
+const HorizontalTreeNode = ({
+  node,
+  allNodes,
+  expandedNodes,
+  toggleExpand,
+  onSelect,
+  activeSearchId
+}: {
+  node: Employee;
+  allNodes: Employee[];
+  expandedNodes: Record<string, boolean>;
+  toggleExpand: (id: string) => void;
+  onSelect: (e: Employee) => void;
+  activeSearchId: string | null;
+}) => {
+  const children = allNodes.filter(e => e.manager === node.name || (node.id === "CEO-ROOT" && e.manager === "CEO"));
+  const hasChildren = children.length > 0;
+  const isExpanded = !!expandedNodes[node.id];
+  const att = getAttendanceDetails(node);
+  const isHighlighted = activeSearchId === node.id;
+
+  return (
+    <div className="flex items-center relative">
+      {/* Node Box */}
+      <div 
+        id={`node-${node.id}`}
+        className={cn(
+          "flex items-center gap-2.5 py-1.5 px-3 rounded-lg cursor-pointer group transition-all relative w-[190px] h-[48px] border bg-white shadow-sm flex-shrink-0 z-10",
+          isHighlighted ? "border-[#5C5CFF] ring-2 ring-[#5C5CFF]/20 border-2" : "border-gray-200 hover:border-gray-350"
+        )}
+        onClick={() => onSelect(node)}
+      >
+        <Avt initials={node.initials} color={node.color} size="sm" />
+        <div className="flex-1 min-w-0 text-left">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[11px] font-bold text-gray-800 group-hover:text-[#5C5CFF] transition-colors truncate">{node.name}</span>
+            <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", att.dotColor)} />
+          </div>
+          <p className="text-[9px] text-gray-500 truncate mt-0.5">{node.designation}</p>
+        </div>
+        
+        {hasChildren && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleExpand(node.id);
+            }}
+            className="absolute -right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[10px] text-gray-505 hover:text-gray-800 hover:border-gray-300 shadow-sm z-20 font-bold transition-all"
+          >
+            {isExpanded ? "−" : `+${children.length}`}
+          </button>
+        )}
+      </div>
+
+      {/* Children list */}
+      {hasChildren && isExpanded && (
+        <div className="flex items-center relative pl-12">
+          {/* Horizontal line from parent node right center to vertical line at left-6 */}
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-px bg-gray-300" />
+          
+          <div className="flex flex-col gap-4 relative">
+            {children.map((child, index) => {
+              const isFirst = index === 0;
+              const isLast = index === children.length - 1;
+              const isSingle = children.length === 1;
+
+              return (
+                <div key={child.id} className="relative flex items-center">
+                  {/* Vertical Connector Line segment with rounded joints */}
+                  {!isSingle && isFirst && (
+                    <div 
+                      className="absolute left-6 top-1/2 bottom-0 w-6 border-l border-t border-gray-300 rounded-tl-[6px]"
+                      style={{ transform: "translateY(-0.5px)" }}
+                    />
+                  )}
+                  {!isSingle && isLast && (
+                    <div 
+                      className="absolute left-6 top-0 bottom-1/2 w-6 border-l border-b border-gray-300 rounded-bl-[6px]"
+                      style={{ transform: "translateY(0.5px)" }}
+                    />
+                  )}
+                  {!isSingle && !isFirst && !isLast && (
+                    <>
+                      <div className="absolute left-6 top-0 bottom-0 w-px bg-gray-300" />
+                      <div className="absolute left-6 w-6 h-px bg-gray-300" />
+                    </>
+                  )}
+                  {isSingle && (
+                    <div className="absolute left-6 w-6 h-px bg-gray-300" />
+                  )}
+                  
+                  <HorizontalTreeNode
+                    node={child}
+                    allNodes={allNodes}
+                    expandedNodes={expandedNodes}
+                    toggleExpand={toggleExpand}
+                    onSelect={onSelect}
+                    activeSearchId={activeSearchId}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export function OrganizationPage({
+  navigate,
+  onSelectEmployee,
+  activeTab,
+  onTabChange,
+  showTeamFilter,
+  setShowTeamFilter,
+  search
+}: {
+  navigate: (p: AppPage) => void;
+  onSelectEmployee: (e: Employee) => void;
+  activeTab: string;
+  onTabChange?: (t: string) => void;
+  showTeamFilter: boolean;
+  setShowTeamFilter: (b: boolean) => void;
+  search?: string;
+}) {
+  const [tab, setTabState] = useState("Overview");
+
   React.useEffect(() => {
-    if (context === "Overview") {
-      if (!overviewTabs.includes(tabInternal as any)) {
-        setTabInternal("Overview");
-      }
-    } else {
-      if (!managementTabs.includes(tabInternal as any)) {
-        setTabInternal("Employees");
-      }
-    }
-  }, [context]);
+    setTabState(activeTab || "Overview");
+  }, [activeTab]);
+
+  const setTab = (newTab: string) => {
+    setTabState(newTab);
+    onTabChange?.(newTab);
+  };
 
   // ── Employees state ──
   const [empSearch, setEmpSearch] = useState("");
@@ -773,40 +1295,6 @@ export function OrganizationPage({ navigate, onSelectEmployee, section, onSectio
 
   return (
     <div className="flex flex-col h-full bg-[#F7F8FA] overflow-hidden">
-      
-      {/* ── Row 3: Context-Specific Tabs ── */}
-      <div className="bg-white border-b border-gray-200 px-6 flex-shrink-0">
-        <div className="flex gap-5 -mb-px">
-          {context === "Overview" ? (
-            overviewTabs.map(v => (
-              <button
-                key={v}
-                onClick={() => setTab(v)}
-                className={cn(
-                  "px-1 py-3 text-sm font-medium border-b-2 transition-colors relative whitespace-nowrap",
-                  tab === v ? "border-[#5C5CFF] text-[#5C5CFF] font-semibold" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                )}
-              >
-                {v}
-              </button>
-            ))
-          ) : (
-            managementTabs.map(v => (
-              <button
-                key={v}
-                onClick={() => setTab(v)}
-                className={cn(
-                  "px-1 py-3 text-sm font-medium border-b-2 transition-colors relative whitespace-nowrap",
-                  tab === v ? "border-[#5C5CFF] text-[#5C5CFF] font-semibold" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                )}
-              >
-                {v}
-              </button>
-            ))
-          )}
-        </div>
-      </div>
-
       <div className="flex-1 overflow-hidden flex flex-col">
 
         {/* ════════════════ OVERVIEW ════════════════ */}
@@ -1027,6 +1515,18 @@ export function OrganizationPage({ navigate, onSelectEmployee, section, onSectio
               </div>
             )}
           </div>
+        )}
+
+        {/* ════════════════ EMPLOYEE TREE ════════════════ */}
+        {tab==="Employee Tree"&&(
+          <EmployeeTreeTab
+            showTeamFilter={showTeamFilter}
+            setShowTeamFilter={setShowTeamFilter}
+            searchTerm={search || ""}
+            navigate={navigate}
+            setTab={setTab}
+            setActiveEmp={setActiveEmp}
+          />
         )}
 
         {/* ════════════════ DEPARTMENTS ════════════════ */}
