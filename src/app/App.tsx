@@ -1132,6 +1132,143 @@ function Header({
 }
 
 
+const getAttendanceDetails = (emp: Employee) => {
+  const record = ATTENDANCE_RECORDS.find(r => r.id === emp.id || r.name === emp.name);
+  if (record) {
+    let status = record.status;
+    let displayStatus = "Checked Out";
+    let dotColor = "bg-gray-300";
+    
+    if (status === "Present") {
+      displayStatus = "Checked In";
+      dotColor = "bg-green-500 animate-pulse";
+    } else if (status === "Late") {
+      displayStatus = "Late";
+      dotColor = "bg-amber-500";
+    } else if (status === "WFH") {
+      displayStatus = "WFH";
+      dotColor = "bg-blue-500";
+    } else if (status === "On Leave") {
+      displayStatus = "On Leave";
+      dotColor = "bg-purple-500";
+    } else if (status === "Absent") {
+      displayStatus = "Checked Out";
+      dotColor = "bg-gray-300";
+    }
+    
+    return {
+      status: displayStatus,
+      dotColor,
+      checkIn: record.checkIn !== "–" ? record.checkIn + " AM" : "–",
+      workingHours: record.hours > 0 ? `${Math.floor(record.hours)}h ${Math.round((record.hours % 1) * 60)}m` : "–"
+    };
+  }
+  
+  let displayStatus = "Checked Out";
+  let dotColor = "bg-gray-300";
+  if (emp.status === "On Leave") {
+    displayStatus = "On Leave";
+    dotColor = "bg-purple-500";
+  } else if (emp.status === "Active") {
+    displayStatus = "Checked In";
+    dotColor = "bg-green-500 animate-pulse";
+  }
+  
+  return {
+    status: displayStatus,
+    dotColor,
+    checkIn: "09:00 AM",
+    workingHours: "8h 00m"
+  };
+};
+
+const getVisibleEmployeesForOrg = (filteredEmployees: Employee[], allEmployees: Employee[]) => {
+  const visible = new Set<string>();
+  
+  filteredEmployees.forEach(emp => {
+    visible.add(emp.id);
+    
+    let current = emp;
+    while (current) {
+      const manager = allEmployees.find(e => e.name === current.manager);
+      if (manager && !visible.has(manager.id)) {
+        visible.add(manager.id);
+        current = manager;
+      } else {
+        break;
+      }
+    }
+  });
+  
+  return allEmployees.filter(e => visible.has(e.id));
+};
+
+const OrgTreeNode = ({
+  employee,
+  allEmployees,
+  expandedNodes,
+  toggleExpand,
+  onSelect
+}: {
+  employee: Employee;
+  allEmployees: Employee[];
+  expandedNodes: Record<string, boolean>;
+  toggleExpand: (id: string) => void;
+  onSelect: (e: Employee) => void;
+}) => {
+  const directReports = allEmployees.filter(e => e.manager === employee.name);
+  const hasReports = directReports.length > 0;
+  const isExpanded = !!expandedNodes[employee.id];
+  const att = getAttendanceDetails(employee);
+
+  return (
+    <div className="flex flex-col text-left">
+      <div 
+        className="flex items-center gap-3 py-2 px-3 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all relative w-fit min-w-[220px] max-w-sm border border-gray-200 bg-white shadow-sm"
+        onClick={() => onSelect(employee)}
+      >
+        <Avt initials={employee.initials} color={employee.color} size="sm" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-800 group-hover:text-[#5C5CFF] transition-colors truncate">{employee.name}</span>
+            <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", att.dotColor)} />
+          </div>
+          <p className="text-[10px] text-gray-500 truncate">{employee.designation}</p>
+        </div>
+        
+        {hasReports && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleExpand(employee.id);
+            }}
+            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </button>
+        )}
+      </div>
+
+      {hasReports && isExpanded && (
+        <div className="pl-6 ml-4 border-l border-dashed border-gray-300 space-y-3 pt-3 pb-1">
+          {directReports.map(report => (
+            <div key={report.id} className="relative">
+              <div className="absolute -left-6 top-5 w-6 border-t border-dashed border-gray-300" />
+              <OrgTreeNode
+                employee={report}
+                allEmployees={allEmployees}
+                expandedNodes={expandedNodes}
+                toggleExpand={toggleExpand}
+                onSelect={onSelect}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 function TeamPage({
   navigate,
   activeTab,
@@ -1141,7 +1278,10 @@ function TeamPage({
   showCreateAnnouncement,
   setShowCreateAnnouncement,
   showCreateTask,
-  setShowCreateTask
+  setShowCreateTask,
+  reporteesViewMode,
+  showTeamFilter,
+  setShowTeamFilter
 }: {
   navigate: (p: AppPage, emp?: any, tabOrSection?: string) => void;
   activeTab: string;
@@ -1152,6 +1292,9 @@ function TeamPage({
   setShowCreateAnnouncement: (b: boolean) => void;
   showCreateTask: boolean;
   setShowCreateTask: (b: boolean) => void;
+  reporteesViewMode: "list" | "org";
+  showTeamFilter: boolean;
+  setShowTeamFilter: (b: boolean) => void;
 }) {
   const [tab, setTab] = useState("Members");
 
@@ -1183,6 +1326,17 @@ function TeamPage({
 
   // Redesigned Tasks selection
   const [selectedTeamTask, setSelectedTeamTask] = useState<any>(null);
+
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    EMPLOYEES.forEach(e => {
+      const hasReports = EMPLOYEES.some(x => x.manager === e.name);
+      if (hasReports) {
+        initial[e.id] = true;
+      }
+    });
+    return initial;
+  });
 
   const approveT = (id:string) => { setTApproveId(id); setTApproveComment(""); };
   const rejectT  = (id:string) => { setTRejectId(id);  setTRejectReason(""); };
@@ -1568,30 +1722,158 @@ function TeamPage({
 
         {/* ── REPORTEES TAB ── */}
         {tab==="Reportees"&&(
-          <div className="flex-1 h-full overflow-auto p-6 bg-[#F7F8FA]">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-7xl mx-auto">
-              {EMPLOYEES.filter(e => e.name.toLowerCase().includes(search.toLowerCase())).map(e => {
-                const isCheckedIn = e.id !== "E013" && e.id !== "E007";
-                return (
-                  <div key={e.id} className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-sm transition-all flex items-start gap-4 text-left">
-                    <Avt initials={e.initials} color={e.color} size="md" />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-gray-900 truncate">{e.name}</h4>
-                      <p className="text-xs text-gray-500 truncate">{e.designation}</p>
-                      <p className="text-[11px] text-gray-400 mt-0.5">{e.dept} · {e.branch}</p>
-                      
-                      <div className="flex items-center gap-2 mt-4">
-                        <div className={cn("w-2 h-2 rounded-full", isCheckedIn ? "bg-green-500 animate-pulse" : "bg-gray-300")} />
-                        <span className="text-[11px] font-medium text-gray-600">
-                          {isCheckedIn ? "Checked In (09:00 AM)" : "Checked Out"}
-                        </span>
-                      </div>
+          (() => {
+            const totalReportees = filtered.length;
+            let checkedInCount = 0;
+            let wfhCount = 0;
+            let leaveCount = 0;
+            let checkedOutCount = 0;
+
+            filtered.forEach(e => {
+              const details = getAttendanceDetails(e);
+              if (details.status === "Checked In" || details.status === "Late") {
+                checkedInCount++;
+              } else if (details.status === "WFH") {
+                wfhCount++;
+              } else if (details.status === "On Leave") {
+                leaveCount++;
+              } else {
+                checkedOutCount++;
+              }
+            });
+
+            return (
+              <div className="flex-1 h-full overflow-auto p-6 bg-[#F7F8FA]">
+                {/* Reporting Summary Strip */}
+                <div className="bg-white border border-gray-200 rounded-xl px-6 py-3.5 flex items-center justify-between text-xs text-gray-500 max-w-7xl mx-auto mb-5 shadow-sm">
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-900 text-sm">{totalReportees}</span>
+                      <span>Direct Reportees</span>
+                    </div>
+                    <div className="h-4 w-px bg-gray-200" />
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      <span className="font-semibold text-gray-900 text-sm">{checkedInCount}</span>
+                      <span>Checked In</span>
+                    </div>
+                    <div className="h-4 w-px bg-gray-200" />
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span className="font-semibold text-gray-900 text-sm">{wfhCount}</span>
+                      <span>WFH</span>
+                    </div>
+                    <div className="h-4 w-px bg-gray-200" />
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-purple-500" />
+                      <span className="font-semibold text-gray-900 text-sm">{leaveCount}</span>
+                      <span>On Leave</span>
+                    </div>
+                    <div className="h-4 w-px bg-gray-200" />
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-gray-300" />
+                      <span className="font-semibold text-gray-900 text-sm">{checkedOutCount}</span>
+                      <span>Checked Out</span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                </div>
+
+                <div className="max-w-7xl mx-auto">
+                  {reporteesViewMode === "list" ? (
+                    /* LIST VIEW */
+                    filtered.length > 0 ? (
+                      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                        <table className="w-full text-sm text-left">
+                          <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                              {["Employee", "Role", "Department", "Location", "Attendance", "Check-in", "Working Hours", ""].map(h => (
+                                <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 bg-white">
+                            {filtered.map(e => {
+                              const att = getAttendanceDetails(e);
+                              return (
+                                <tr
+                                  key={e.id}
+                                  onClick={() => navigate("employee-profile", e)}
+                                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                                >
+                                  <td className="px-5 py-3.5">
+                                    <div className="flex items-center gap-3">
+                                      <Avt initials={e.initials} color={e.color} size="sm" />
+                                      <div className="flex flex-col text-left">
+                                        <span className="font-semibold text-gray-800 text-xs">{e.name}</span>
+                                        <span className="text-[10px] text-gray-400">{e.id}</span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-5 py-3.5 text-xs text-gray-600 font-medium">{e.designation}</td>
+                                  <td className="px-5 py-3.5 text-xs text-gray-500">{e.dept}</td>
+                                  <td className="px-5 py-3.5 text-xs text-gray-500">{e.branch}</td>
+                                  <td className="px-5 py-3.5 text-xs text-gray-650">
+                                    <div className="flex items-center gap-1.5">
+                                      <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", att.dotColor)} />
+                                      <span className="text-[11px] font-medium text-gray-600">{att.status}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-5 py-3.5 font-mono text-xs text-gray-500">{att.checkIn}</td>
+                                  <td className="px-5 py-3.5 font-mono text-xs text-gray-500">{att.workingHours}</td>
+                                  <td className="px-5 py-3.5 text-right" onClick={(ev) => ev.stopPropagation()}>
+                                    <button className="text-gray-400 hover:text-gray-650 p-1 rounded hover:bg-gray-100 transition-colors">
+                                      <MoreHorizontal size={14} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400 text-sm shadow-sm">
+                        No matching reportees found
+                      </div>
+                    )
+                  ) : (
+                    /* ORGANIZATION VIEW */
+                    (() => {
+                      const visibleList = getVisibleEmployeesForOrg(filtered, EMPLOYEES);
+                      const roots = visibleList.filter(e => {
+                        return e.manager === "CEO" || !visibleList.some(emp => emp.name === e.manager);
+                      });
+
+                      if (roots.length === 0) {
+                        return (
+                          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400 text-sm shadow-sm">
+                            No hierarchy could be generated for the active filters
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm overflow-auto">
+                          <div className="flex flex-col gap-6 max-w-3xl">
+                            {roots.map(root => (
+                              <OrgTreeNode
+                                key={root.id}
+                                employee={root}
+                                allEmployees={visibleList}
+                                expandedNodes={expandedNodes}
+                                toggleExpand={(id) => setExpandedNodes(prev => ({ ...prev, [id]: !prev[id] }))}
+                                onSelect={(e) => navigate("employee-profile", e)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()
+                  )}
+                </div>
+              </div>
+            );
+          })()
         )}
 
         {/* ── APPROVALS TAB ── */}
@@ -1908,6 +2190,48 @@ function TeamPage({
               <div><p className="font-semibold text-gray-900">{selectedEmp.name}</p><p className="text-xs text-gray-500">{selectedEmp.designation}</p></div>
             </div>
             <Btn className="w-full justify-center" onClick={()=>setShowCallModal(false)}><Phone size={13}/>Call Now</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── TeamPage: Filters Modal ── */}
+      {showTeamFilter && (
+        <Modal title="Filter Members & Reportees" onClose={() => setShowTeamFilter(false)} width="max-w-md">
+          <div className="space-y-4 text-left">
+            <SelectField
+              label="Department"
+              options={depts}
+              value={deptFilter}
+              onChange={(v) => setDeptFilter(v)}
+            />
+            <SelectField
+              label="Location"
+              options={locations}
+              value={locationFilter}
+              onChange={(v) => setLocationFilter(v)}
+            />
+            <SelectField
+              label="Designation"
+              options={desigs}
+              value={desigFilter}
+              onChange={(v) => setDesigFilter(v)}
+            />
+            <SelectField
+              label="Status"
+              options={["All", "Active", "On Leave", "Inactive"]}
+              value={statusFilter}
+              onChange={(v) => setStatusFilter(v)}
+            />
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-150">
+              <Btn variant="outline" size="sm" onClick={() => {
+                setDeptFilter("All");
+                setLocationFilter("All");
+                setDesigFilter("All");
+                setStatusFilter("All");
+                setShowTeamFilter(false);
+              }}>Reset</Btn>
+              <Btn size="sm" onClick={() => setShowTeamFilter(false)}>Apply Filters</Btn>
+            </div>
           </div>
         </Modal>
       )}
@@ -4236,8 +4560,38 @@ export default function App() {
             />
           </div>
           <div className="flex-1" />
+          
+          {/* View Switcher Container */}
+          <div className="flex items-center border border-[#E5E7EB] rounded-[10px] bg-[#FFFFFF] overflow-hidden h-10">
+            <button
+              onClick={() => setReporteesViewMode("list")}
+              title="List View"
+              className={cn(
+                "h-full w-10 flex items-center justify-center transition-colors border-r border-[#E5E7EB]",
+                reporteesViewMode === "list"
+                  ? "bg-[#EEF2FF] text-[#5C5CFF]"
+                  : "text-gray-500 hover:bg-gray-50"
+              )}
+            >
+              <List size={16} />
+            </button>
+            <button
+              onClick={() => setReporteesViewMode("org")}
+              title="Organization View"
+              className={cn(
+                "h-full w-10 flex items-center justify-center transition-colors",
+                reporteesViewMode === "org"
+                  ? "bg-[#EEF2FF] text-[#5C5CFF]"
+                  : "text-gray-500 hover:bg-gray-50"
+              )}
+            >
+              <Network size={16} />
+            </button>
+          </div>
+
           <button
             onClick={() => setShowTeamFilter(true)}
+            title="Filter"
             className="h-10 w-10 flex items-center justify-center p-0 rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] hover:bg-gray-50 transition-colors"
           >
             <SlidersHorizontal size={16} />
@@ -4421,7 +4775,7 @@ export default function App() {
         />
         <main className="flex-1 overflow-auto bg-[#F7F8FA]">
           {page==="my-space"&&<MySpacePage navigate={navigate} activeTab={mySpaceTab}/>}
-          {page==="team"&&<TeamPage navigate={navigate} activeTab={teamTab} search={teamSearch} showCreatePost={showCreatePost} setShowCreatePost={setShowCreatePost} showCreateAnnouncement={showCreateAnnouncement} setShowCreateAnnouncement={setShowCreateAnnouncement} showCreateTask={showCreateTask} setShowCreateTask={setShowCreateTask}/>}
+          {page==="team"&&<TeamPage navigate={navigate} activeTab={teamTab} search={teamSearch} showCreatePost={showCreatePost} setShowCreatePost={setShowCreatePost} showCreateAnnouncement={showCreateAnnouncement} setShowCreateAnnouncement={setShowCreateAnnouncement} showCreateTask={showCreateTask} setShowCreateTask={setShowCreateTask} reporteesViewMode={reporteesViewMode} showTeamFilter={showTeamFilter} setShowTeamFilter={setShowTeamFilter}/>}
           {page==="organization"&&<OrganizationPage navigate={navigate} onSelectEmployee={e=>navigate("employee-profile",e)} section={orgSection} onSectionChange={setOrgSection}/>}
           {page==="attendance"&&<AttendancePage navigate={navigate} section={attendanceSection} onSectionChange={setAttendanceSection} activeTab={attendanceTab}/>}
           {page==="leave"&&<LeavePage navigate={navigate} section={leaveSection} onSectionChange={setLeaveSection} activeTab={leaveTab}/>}
