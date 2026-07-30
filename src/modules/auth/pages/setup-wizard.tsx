@@ -5,11 +5,9 @@ import {
   Upload, ChevronDown, X, Check, Copy, ArrowRight, ChevronLeft,
   ChevronRight, Users
 } from "lucide-react";
-import {
-  EMPLOYEES,
-  cn
-} from "./data";
-import { Btn, InputField, SelectField } from "./ui";
+import { cn } from "@/shared/utils";
+import { EMPLOYEES } from "@/modules/organization/data/employees";
+import { Btn, InputField, SelectField } from "@/shared/components";
 
 // ── Setup Wizard (12-step onboarding) ─────────────────────────────────────────
 const SETUP_STEPS = [

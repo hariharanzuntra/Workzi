@@ -12,7 +12,7 @@ import {
   Award, FileBarChart, GitBranch, BookOpen, Building, Hash,
   Layers, ClipboardList, Network, Key, Target, Star, Info,
   ChevronRight as CR, Inbox, Package, Copy, XCircle,
-  Pin, Bookmark, Share2, Printer, Paperclip, MessageCircle, Archive, Monitor,
+  Pin, Bookmark, Share2, Printer, Paperclip, MessageCircle, MessageSquare, Archive, Monitor,
   Play, Circle, LayoutGrid
 } from "lucide-react";
 import {
@@ -26,1110 +26,21 @@ import {
   LEAVE_REQUESTS, ATTENDANCE_RECORDS, NOTIFICATIONS, DOCUMENTS_LIST,
   cn, fmtDate
 } from "./data";
-import { Avt, StatusBadge, Btn, KPICard, PageHeader, Modal, TabBar, InputField, SelectField } from "./ui";
+import { Avt, StatusBadge, Btn, KPICard, PageHeader, Modal, TabBar, InputField, SelectField, Drawer } from "./ui";
 import { OrganizationPage } from "./OrganizationPage";
 import { AppHeader, SegmentedControl } from "./AppHeader";
 import { ManageAccountPage } from "./ManageAccount";
-import { SetupWizard } from "./SetupWizard";
+import { SetupWizard, LoginPage, CreateAdminAccountPage, GettingStartedPage } from "@/modules/auth";
 import { MySpacePage } from "./MySpacePage";
-
-// ── Login ──────────────────────────────────────────────────────────────────────
-function LoginPage({ onLogin }: { onLogin:()=>void }) {
-  const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"sso"|"email">("sso");
-  const handle = () => { setLoading(true); setTimeout(()=>{setLoading(false);onLogin();},1000); };
-
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Left brand panel */}
-      <div className="hidden lg:flex lg:w-[52%] bg-[#5C5CFF] flex-col justify-between p-12 relative overflow-hidden">
-        {/* Abstract background shapes */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/5"/>
-          <div className="absolute top-1/3 -left-8 w-48 h-48 rounded-full bg-white/5"/>
-          <div className="absolute bottom-12 right-12 w-96 h-96 rounded-full bg-white/5"/>
-        </div>
-        <div className="relative flex items-center gap-3">
-          <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center"><Users size={20} className="text-white"/></div>
-          <span className="text-white font-semibold text-lg">Attendance HRMS</span>
-        </div>
-        <div className="relative">
-          <div className="inline-flex items-center gap-2 bg-white/10 text-white/80 text-xs px-3 py-1.5 rounded-full mb-5">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse"/><span>Enterprise Edition · Trusted by 200+ organizations</span>
-          </div>
-          <h2 className="text-4xl font-light text-white leading-tight mb-6">Your complete<br/><span className="font-semibold">HR Workspace.</span></h2>
-          <p className="text-white/70 text-sm mb-8 leading-relaxed max-w-sm">Attendance, leave, shifts, teams, and approvals — unified in one intelligent platform built for growing organizations.</p>
-          <div className="space-y-3">
-            {[
-              {icon:Users, text:"Unified employee management"},
-              {icon:Clock, text:"Real-time attendance & shift tracking"},
-              {icon:CheckCircle, text:"Smart approvals & delegation"},
-            ].map(({icon:Icon,text})=>(
-              <div key={text} className="flex items-center gap-3 text-white/80 text-sm">
-                <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0"><Icon size={14} className="text-white"/></div>{text}
-              </div>
-            ))}
-          </div>
-        </div>
-        <p className="relative text-white/30 text-xs">© 2024 Attendance HRMS. All rights reserved.</p>
-      </div>
-
-      {/* Right sign-in panel */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-white">
-        <div className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-[#5C5CFF] rounded-lg flex items-center justify-center"><Users size={16} className="text-white"/></div>
-            <span className="font-semibold text-gray-800">Attendance HRMS</span>
-          </div>
-          <h1 className="text-2xl font-semibold text-gray-900 mb-1">Sign in</h1>
-          <p className="text-gray-500 text-sm mb-8">Access your admin workspace</p>
-
-          {mode === "sso" ? (
-            <div className="space-y-3">
-              {/* SSO buttons */}
-              <button onClick={handle} className="w-full flex items-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
-                {/* Google icon */}
-                <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                </svg>
-                Continue with Google
-              </button>
-              <button onClick={handle} className="w-full flex items-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
-                {/* Microsoft icon */}
-                <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0">
-                  <rect x="1" y="1" width="10" height="10" fill="#F25022"/>
-                  <rect x="13" y="1" width="10" height="10" fill="#7FBA00"/>
-                  <rect x="1" y="13" width="10" height="10" fill="#00A4EF"/>
-                  <rect x="13" y="13" width="10" height="10" fill="#FFB900"/>
-                </svg>
-                Continue with Microsoft
-              </button>
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"/></div>
-                <div className="relative flex justify-center"><span className="bg-white px-3 text-xs text-gray-400">or</span></div>
-              </div>
-              <button onClick={()=>setMode("email")} className="w-full py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                Sign in with Email
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <button onClick={()=>setMode("sso")} className="flex items-center gap-1.5 text-xs text-[#5C5CFF] hover:underline mb-2"><ChevronLeft size={13}/>Back to sign-in options</button>
-              <InputField label="Work Email" type="email" placeholder="admin@company.com" value="admin@acmecorp.com"/>
-              <div className="flex flex-col gap-1.5">
-                <div className="flex justify-between">
-                  <label className="text-sm font-medium text-gray-700">Password</label>
-                  <button className="text-xs text-[#5C5CFF] hover:underline">Forgot password?</button>
-                </div>
-                <input type="password" defaultValue="••••••••••" className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]"/>
-              </div>
-              <div className="flex items-center gap-2"><input type="checkbox" defaultChecked className="rounded border-gray-300 accent-[#5C5CFF]"/><label className="text-sm text-gray-600">Keep me signed in</label></div>
-              <button onClick={handle} disabled={loading} className="w-full py-2.5 bg-[#5C5CFF] text-white text-sm font-medium rounded-lg hover:bg-[#4A4AE0] transition-colors disabled:opacity-70 flex items-center justify-center gap-2">
-                {loading ? <><RefreshCw size={14} className="animate-spin"/>Signing in…</> : "Sign in"}
-              </button>
-            </div>
-          )}
-
-          <p className="mt-8 text-center text-xs text-gray-400">
-            By signing in you agree to our <button className="text-[#5C5CFF] hover:underline">Terms of Service</button> and <button className="text-[#5C5CFF] hover:underline">Privacy Policy</button>.
-          </p>
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-            <p className="text-xs text-blue-700 font-medium mb-0.5">Demo access</p>
-            <p className="text-xs text-blue-600">Click any sign-in option above to continue with demo credentials.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Create Administrator Account ───────────────────────────────────────────────
-function CreateAdminAccountPage({ onContinue, onBack }: { onContinue:()=>void; onBack:()=>void }) {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
-  const [department, setDepartment] = useState("");
-  const [timezone, setTimezone] = useState("(UTC-5) Eastern Time");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPwd, setShowPwd] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [mfaEnabled, setMfaEnabled] = useState(false);
-  const [mfaMethod, setMfaMethod] = useState<"app"|"sms">("app");
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState<string|null>(null);
-  const [activeSection, setActiveSection] = useState<"personal"|"role"|"security"|"legal">("personal");
-  const [submitted, setSubmitted] = useState(false);
-
-  const emailFromAuth = "admin@acmecorp.com";
-  const authMethod: "sso"|"email" = "sso";
-
-  const pwdStrength = (() => {
-    if (!password) return 0;
-    let s = 0;
-    if (password.length >= 8) s++;
-    if (/[A-Z]/.test(password)) s++;
-    if (/[0-9]/.test(password)) s++;
-    if (/[^A-Za-z0-9]/.test(password)) s++;
-    return s;
-  })();
-  const pwdLabel = ["","Weak","Fair","Strong","Very Strong"][pwdStrength];
-  const pwdColor = ["","bg-red-400","bg-amber-400","bg-blue-400","bg-green-500"][pwdStrength];
-
-  const SECTIONS = [
-    { id:"personal" as const, label:"Personal Information", icon:User },
-    { id:"role"     as const, label:"Organization Role",    icon:Briefcase },
-    { id:"security" as const, label:"Security",             icon:Shield },
-    { id:"legal"    as const, label:"Legal & Consent",      icon:CheckCircle },
-  ];
-
-  const isPersonalComplete = firstName.trim()&&lastName.trim()&&mobile.trim();
-  const isRoleComplete = jobTitle.trim();
-  const isSecurityComplete = authMethod==="sso" || (password.length>=8 && password===confirmPassword);
-  const isLegalComplete = acceptTerms && acceptPrivacy;
-  const canSubmit = isPersonalComplete && isRoleComplete && isSecurityComplete && isLegalComplete;
-
-  const handleContinue = () => {
-    setSubmitted(true);
-    if (canSubmit) onContinue();
-  };
-
-  const SectionNav = () => (
-    <nav className="space-y-1">
-      {SECTIONS.map(s => {
-        const isComplete =
-          s.id==="personal"?!!isPersonalComplete:
-          s.id==="role"?!!isRoleComplete:
-          s.id==="security"?!!isSecurityComplete:
-          isLegalComplete;
-        return (
-          <button key={s.id} onClick={()=>setActiveSection(s.id)}
-            className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-sm",
-              activeSection===s.id?"bg-[#EEF2FF] text-[#5C5CFF] font-medium":"text-gray-600 hover:bg-gray-100"
-            )}>
-            <div className={cn("w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0",
-              isComplete?"bg-green-500":"bg-gray-200"
-            )}>
-              {isComplete
-                ? <Check size={11} className="text-white"/>
-                : <s.icon size={11} className="text-gray-500"/>
-              }
-            </div>
-            {s.label}
-          </button>
-        );
-      })}
-    </nav>
-  );
-
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Left brand panel */}
-      <div className="hidden lg:flex lg:w-[38%] bg-[#5C5CFF] flex-col justify-between p-10 relative overflow-hidden flex-shrink-0">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/5"/>
-          <div className="absolute top-1/2 -left-10 w-52 h-52 rounded-full bg-white/5"/>
-          <div className="absolute -bottom-10 right-10 w-80 h-80 rounded-full bg-white/5"/>
-        </div>
-        <div className="relative flex items-center gap-3">
-          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center"><Users size={16} className="text-white"/></div>
-          <span className="text-white font-semibold text-sm">Attendance HRMS</span>
-        </div>
-        <div className="relative space-y-8">
-          {/* Step indicator */}
-          <div>
-            <div className="flex items-center gap-2 mb-5">
-              {[1,2,3].map(n=>(
-                <React.Fragment key={n}>
-                  <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
-                    n===1?"bg-white text-[#5C5CFF]":n===2?"bg-white/20 text-white border border-white/30":"bg-white/10 text-white/40 border border-white/10"
-                  )}>{n===1?<Check size={13}/>:n}</div>
-                  {n<3&&<div className={cn("flex-1 h-px",n===1?"bg-white/40":"bg-white/15")}/>}
-                </React.Fragment>
-              ))}
-            </div>
-            <div className="flex justify-between text-[10px] text-white/50 px-0.5">
-              <span className="text-white/80 font-medium">Sign in</span>
-              <span className="text-white font-semibold">Your Account</span>
-              <span>Workspace Setup</span>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-semibold text-white leading-snug mb-3">
-              Tell us about<br/>yourself
-            </h2>
-            <p className="text-white/65 text-sm leading-relaxed">
-              This creates your administrator identity for the workspace. Your profile will be visible to employees you invite.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {[
-              {icon:User,     text:"Your admin profile stays separate from the organization setup."},
-              {icon:Shield,   text:"You can enable two-factor authentication to protect this account."},
-              {icon:Building, text:"Organization details come next in the setup wizard."},
-            ].map(({icon:Icon,text})=>(
-              <div key={text} className="flex items-start gap-3 text-white/70 text-xs leading-relaxed">
-                <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Icon size={12} className="text-white"/>
-                </div>
-                {text}
-              </div>
-            ))}
-          </div>
-        </div>
-        <p className="relative text-white/25 text-xs">© 2024 Attendance HRMS. All rights reserved.</p>
-      </div>
-
-      {/* Right form panel */}
-      <div className="flex-1 flex flex-col overflow-auto">
-        {/* Top bar */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-3 flex items-center gap-4">
-          <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors">
-            <ChevronLeft size={14}/>Back to Sign In
-          </button>
-          <div className="ml-auto flex items-center gap-3">
-            <div className="flex gap-1">
-              {SECTIONS.map((s,i)=>(
-                <div key={s.id} className={cn("h-1 rounded-full transition-all",
-                  activeSection===s.id?"w-8 bg-[#5C5CFF]":"w-4",
-                  (i===0&&isPersonalComplete)||(i===1&&isRoleComplete)||(i===2&&isSecurityComplete)||(i===3&&isLegalComplete)
-                    ?"bg-green-400":"bg-gray-200"
-                )}/>
-              ))}
-            </div>
-            <span className="text-xs text-gray-400">{SECTIONS.findIndex(s=>s.id===activeSection)+1} of 4</span>
-          </div>
-        </div>
-
-        <div className="flex-1 flex gap-0">
-          {/* Section sidebar */}
-          <div className="hidden xl:block w-56 border-r border-gray-100 p-5 flex-shrink-0 sticky top-[53px] self-start h-[calc(100vh-53px)]">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">Sections</p>
-            <SectionNav/>
-          </div>
-
-          {/* Main form */}
-          <div className="flex-1 px-8 py-8 max-w-2xl">
-            <div className="mb-6">
-              <h1 className="text-xl font-semibold text-gray-900">Create Administrator Account</h1>
-              <p className="text-sm text-gray-500 mt-1">Set up your identity before configuring the workspace.</p>
-            </div>
-
-            {/* Mobile section nav */}
-            <div className="xl:hidden mb-6">
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {SECTIONS.map(s=>(
-                  <button key={s.id} onClick={()=>setActiveSection(s.id)} className={cn("flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
-                    activeSection===s.id?"bg-[#5C5CFF] text-white":"bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  )}>{s.label}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* ── PERSONAL INFORMATION ── */}
-            {activeSection==="personal"&&(
-              <div className="space-y-5">
-                <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
-                  <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                    <User size={15} className="text-[#5C5CFF]"/>Personal Information
-                  </h2>
-
-                  {/* Photo upload */}
-                  <div className="flex items-center gap-5">
-                    <div className="w-16 h-16 rounded-full bg-[#EEF2FF] flex items-center justify-center text-[#5C5CFF] font-bold text-xl flex-shrink-0 overflow-hidden border-2 border-[#5C5CFF]/20">
-                      {photoPreview
-                        ? <img src={photoPreview} className="w-full h-full object-cover" alt=""/>
-                        : <span>{(firstName?.[0]||"A").toUpperCase()}{(lastName?.[0]||"").toUpperCase()}</span>
-                      }
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700 mb-1">Profile Photo</p>
-                      <p className="text-xs text-gray-400 mb-2">Optional · JPG or PNG, max 2MB</p>
-                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                        <Upload size={12}/>Upload Photo
-                        <input type="file" accept="image/*" className="hidden" onChange={e=>{
-                          const f=e.target.files?.[0];
-                          if(f){const r=new FileReader();r.onload=ev=>setPhotoPreview(ev.target?.result as string);r.readAsDataURL(f);}
-                        }}/>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-gray-700">First Name <span className="text-red-500">*</span></label>
-                      <input value={firstName} onChange={e=>setFirstName(e.target.value)}
-                        placeholder="Alex" className={cn("px-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]",submitted&&!firstName.trim()?"border-red-300 focus:ring-red-300":"border-gray-300")}/>
-                      {submitted&&!firstName.trim()&&<p className="text-[11px] text-red-500">First name is required</p>}
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-gray-700">Last Name <span className="text-red-500">*</span></label>
-                      <input value={lastName} onChange={e=>setLastName(e.target.value)}
-                        placeholder="Johnson" className={cn("px-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]",submitted&&!lastName.trim()?"border-red-300":"border-gray-300")}/>
-                      {submitted&&!lastName.trim()&&<p className="text-[11px] text-red-500">Last name is required</p>}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-700">Work Email</label>
-                    <div className="relative">
-                      <input value={emailFromAuth} readOnly
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-500 pr-24 cursor-not-allowed"/>
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Check size={9}/>Verified
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-gray-400">Pre-filled from your authentication. Cannot be changed here.</p>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-700">Mobile Number <span className="text-red-500">*</span></label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-shrink-0">
-                        <select className="pl-3 pr-7 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]">
-                          <option>+1 (US)</option>
-                          <option>+44 (UK)</option>
-                          <option>+91 (IN)</option>
-                          <option>+61 (AU)</option>
-                          <option>+1 (CA)</option>
-                        </select>
-                        <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
-                      </div>
-                      <input value={mobile} onChange={e=>setMobile(e.target.value)}
-                        type="tel" placeholder="(555) 000-0000"
-                        className={cn("flex-1 px-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]",submitted&&!mobile.trim()?"border-red-300":"border-gray-300")}/>
-                    </div>
-                    {submitted&&!mobile.trim()&&<p className="text-[11px] text-red-500">Mobile number is required</p>}
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <button onClick={()=>setActiveSection("role")} className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#5C5CFF] text-white text-sm font-medium rounded-lg hover:bg-[#4A4AE0] transition-colors">
-                    Next: Organization Role<ArrowRight size={14}/>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── ORGANIZATION ROLE ── */}
-            {activeSection==="role"&&(
-              <div className="space-y-5">
-                <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
-                  <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                    <Briefcase size={15} className="text-[#5C5CFF]"/>Organization Role
-                  </h2>
-                  <p className="text-xs text-gray-500 -mt-2">This will appear on your admin profile and in the organization directory.</p>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-700">Job Title <span className="text-red-500">*</span></label>
-                    <input value={jobTitle} onChange={e=>setJobTitle(e.target.value)}
-                      placeholder="e.g. HR Manager, IT Director, CEO"
-                      className={cn("px-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]",submitted&&!jobTitle.trim()?"border-red-300":"border-gray-300")}/>
-                    {submitted&&!jobTitle.trim()&&<p className="text-[11px] text-red-500">Job title is required</p>}
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-700">Department <span className="text-gray-400 font-normal">(optional)</span></label>
-                    <div className="relative">
-                      <select value={department} onChange={e=>setDepartment(e.target.value)}
-                        className="w-full pl-3 pr-8 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]">
-                        <option value="">Select department</option>
-                        {["Engineering","Product","Design","Marketing","Sales","HR","Finance","Operations","Legal","IT"].map(d=><option key={d}>{d}</option>)}
-                      </select>
-                      <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                      Time Zone
-                      <span className="text-[10px] font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">Auto-detected from browser</span>
-                    </label>
-                    <div className="relative">
-                      <select value={timezone} onChange={e=>setTimezone(e.target.value)}
-                        className="w-full pl-3 pr-8 py-2 text-sm border border-gray-300 rounded-lg bg-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]">
-                        {["(UTC-12) International Date Line West","(UTC-8) Pacific Time","(UTC-7) Mountain Time","(UTC-6) Central Time","(UTC-5) Eastern Time","(UTC+0) UTC / Greenwich","(UTC+1) Central European Time","(UTC+3) Moscow / Riyadh","(UTC+5:30) India Standard Time","(UTC+8) China / Singapore","(UTC+9) Japan Standard Time","(UTC+10) Australian Eastern","(UTC+12) New Zealand"].map(tz=><option key={tz}>{tz}</option>)}
-                      </select>
-                      <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <button onClick={()=>setActiveSection("personal")} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                    <ChevronLeft size={14}/>Back
-                  </button>
-                  <button onClick={()=>setActiveSection("security")} className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#5C5CFF] text-white text-sm font-medium rounded-lg hover:bg-[#4A4AE0] transition-colors">
-                    Next: Security<ArrowRight size={14}/>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── SECURITY ── */}
-            {activeSection==="security"&&(
-              <div className="space-y-5">
-                {/* Password (email sign-up only) */}
-                {authMethod==="email"?(
-                  <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
-                    <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                      <Lock size={15} className="text-[#5C5CFF]"/>Set Password
-                    </h2>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-gray-700">Password <span className="text-red-500">*</span></label>
-                      <div className="relative">
-                        <input type={showPwd?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)}
-                          placeholder="Min 8 characters"
-                          className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]"/>
-                        <button type="button" onClick={()=>setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                          <Eye size={14}/>
-                        </button>
-                      </div>
-                      {password&&(
-                        <div className="space-y-1.5">
-                          <div className="flex gap-1">
-                            {[1,2,3,4].map(i=><div key={i} className={cn("h-1 flex-1 rounded-full transition-colors",i<=pwdStrength?pwdColor:"bg-gray-200")}/>)}
-                          </div>
-                          <p className={cn("text-[11px] font-medium",pwdStrength<=1?"text-red-500":pwdStrength===2?"text-amber-500":pwdStrength===3?"text-blue-500":"text-green-500")}>{pwdLabel}</p>
-                          <ul className="text-[11px] text-gray-400 space-y-0.5">
-                            {[["8+ characters",password.length>=8],[/[A-Z]/.test(password),"Uppercase letter"],[/[0-9]/.test(password),"Number"],[/[^A-Za-z0-9]/.test(password),"Special character"]].map(([val,label])=>(
-                              <li key={label as string} className={cn("flex items-center gap-1.5",val?"text-green-600":"text-gray-400")}>
-                                <Check size={9} className={cn(val?"opacity-100":"opacity-0")}/>{label}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-gray-700">Confirm Password <span className="text-red-500">*</span></label>
-                      <div className="relative">
-                        <input type={showConfirm?"text":"password"} value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
-                          placeholder="Re-enter password"
-                          className={cn("w-full px-3 py-2 pr-10 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]",
-                            confirmPassword&&confirmPassword!==password?"border-red-300":"border-gray-300")}/>
-                        <button type="button" onClick={()=>setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                          <Eye size={14}/>
-                        </button>
-                      </div>
-                      {confirmPassword&&confirmPassword!==password&&<p className="text-[11px] text-red-500">Passwords do not match</p>}
-                      {confirmPassword&&confirmPassword===password&&password.length>=8&&<p className="text-[11px] text-green-600 flex items-center gap-1"><Check size={10}/>Passwords match</p>}
-                    </div>
-                  </div>
-                ):(
-                  <div className="bg-white border border-gray-200 rounded-xl p-6">
-                    <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-3">
-                      <Lock size={15} className="text-[#5C5CFF]"/>Password
-                    </h2>
-                    <div className="flex items-start gap-3 p-3.5 bg-green-50 rounded-lg border border-green-100">
-                      <CheckCircle size={16} className="text-green-500 flex-shrink-0 mt-0.5"/>
-                      <div>
-                        <p className="text-sm font-medium text-green-800">Authenticated via SSO</p>
-                        <p className="text-xs text-green-700 mt-0.5">Your account is secured through Google / Microsoft Single Sign-On. No password is required.</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 2FA */}
-                <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                        <Shield size={15} className="text-[#5C5CFF]"/>Two-Factor Authentication
-                        <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded ml-1">Optional</span>
-                      </h2>
-                      <p className="text-xs text-gray-500 mt-0.5">Add a second layer of security to your administrator account.</p>
-                    </div>
-                    <button onClick={()=>setMfaEnabled(!mfaEnabled)}
-                      className={cn("w-11 h-6 rounded-full relative transition-colors flex-shrink-0 mt-0.5",mfaEnabled?"bg-[#5C5CFF]":"bg-gray-300")}>
-                      <div className={cn("absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform",mfaEnabled?"left-5":"left-0.5")}/>
-                    </button>
-                  </div>
-
-                  {mfaEnabled&&(
-                    <div className="space-y-3 pt-2 border-t border-gray-100">
-                      <p className="text-xs font-medium text-gray-600">Choose authentication method</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        {([
-                          {id:"app",icon:Key,title:"Authenticator App",sub:"Google Authenticator, Authy, etc."},
-                          {id:"sms",icon:Phone,title:"SMS / Text Message",sub:"Receive codes via your mobile number"},
-                        ] as const).map(opt=>(
-                          <button key={opt.id} onClick={()=>setMfaMethod(opt.id)}
-                            className={cn("p-3.5 rounded-xl border-2 text-left transition-all",
-                              mfaMethod===opt.id?"border-[#5C5CFF] bg-[#EEF2FF]":"border-gray-200 hover:border-gray-300"
-                            )}>
-                            <opt.icon size={18} className={cn("mb-2",mfaMethod===opt.id?"text-[#5C5CFF]":"text-gray-400")}/>
-                            <p className={cn("text-xs font-semibold",mfaMethod===opt.id?"text-[#5C5CFF]":"text-gray-700")}>{opt.title}</p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">{opt.sub}</p>
-                          </button>
-                        ))}
-                      </div>
-                      {mfaMethod==="app"&&(
-                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-start gap-4">
-                          {/* Mock QR code */}
-                          <div className="w-20 h-20 bg-white rounded-lg border border-gray-200 flex-shrink-0 grid grid-cols-5 gap-0.5 p-2">
-                            {Array.from({length:25},(_,i)=>(
-                              <div key={i} className={cn("rounded-[1px]",[0,1,2,3,4,5,9,10,14,15,19,20,21,22,23,24,7,12,17].includes(i)?"bg-gray-900":"bg-white")}/>
-                            ))}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-gray-800 mb-1">Scan with your authenticator app</p>
-                            <p className="text-[11px] text-gray-500 mb-2 leading-relaxed">Open your app and scan the QR code, or enter the key manually:</p>
-                            <code className="text-[11px] font-mono bg-gray-100 px-2 py-1 rounded text-gray-700 break-all">JBSW Y3DP EHPK 3PXP</code>
-                          </div>
-                        </div>
-                      )}
-                      {mfaMethod==="sms"&&(
-                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                          <p className="text-xs text-gray-600 mb-2">A verification code will be sent to your registered mobile number ending in <strong>•••• {mobile.slice(-4)||"0000"}</strong>.</p>
-                          <button className="text-xs text-[#5C5CFF] hover:underline">Change mobile number</button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <button onClick={()=>setActiveSection("role")} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                    <ChevronLeft size={14}/>Back
-                  </button>
-                  <button onClick={()=>setActiveSection("legal")} className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#5C5CFF] text-white text-sm font-medium rounded-lg hover:bg-[#4A4AE0] transition-colors">
-                    Next: Legal &amp; Consent<ArrowRight size={14}/>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── LEGAL & CONSENT ── */}
-            {activeSection==="legal"&&(
-              <div className="space-y-5">
-                <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
-                  <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                    <CheckCircle size={15} className="text-[#5C5CFF]"/>Legal &amp; Consent
-                  </h2>
-
-                  <div className="space-y-4">
-                    {/* Terms */}
-                    <label className={cn("flex items-start gap-3.5 p-4 rounded-xl border-2 cursor-pointer transition-all",
-                      acceptTerms?"border-[#5C5CFF] bg-[#EEF2FF]":"border-gray-200 hover:border-gray-300"
-                    )}>
-                      <input type="checkbox" checked={acceptTerms} onChange={e=>setAcceptTerms(e.target.checked)}
-                        className="mt-0.5 rounded accent-[#5C5CFF] flex-shrink-0"/>
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">
-                          I accept the <button type="button" className="text-[#5C5CFF] hover:underline font-semibold" onClick={e=>e.stopPropagation()}>Terms &amp; Conditions</button>
-                          <span className="text-red-500 ml-1">*</span>
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                          By accepting, you agree to be bound by the Attendance HRMS Terms of Service, including the acceptable use policy and administrator responsibilities.
-                        </p>
-                      </div>
-                    </label>
-
-                    {/* Privacy */}
-                    <label className={cn("flex items-start gap-3.5 p-4 rounded-xl border-2 cursor-pointer transition-all",
-                      acceptPrivacy?"border-[#5C5CFF] bg-[#EEF2FF]":"border-gray-200 hover:border-gray-300"
-                    )}>
-                      <input type="checkbox" checked={acceptPrivacy} onChange={e=>setAcceptPrivacy(e.target.checked)}
-                        className="mt-0.5 rounded accent-[#5C5CFF] flex-shrink-0"/>
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">
-                          I accept the <button type="button" className="text-[#5C5CFF] hover:underline font-semibold" onClick={e=>e.stopPropagation()}>Privacy Policy</button>
-                          <span className="text-red-500 ml-1">*</span>
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                          You confirm that you have read and understood how we collect, use, and protect personal data under GDPR, CCPA, and applicable data protection laws.
-                        </p>
-                      </div>
-                    </label>
-                  </div>
-
-                  {/* Completion summary */}
-                  <div className="pt-2 border-t border-gray-100">
-                    <p className="text-xs font-semibold text-gray-500 mb-3">Account Summary</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        {label:"Name",value:firstName&&lastName?`${firstName} ${lastName}`:"—"},
-                        {label:"Email",value:emailFromAuth},
-                        {label:"Mobile",value:mobile||"—"},
-                        {label:"Job Title",value:jobTitle||"—"},
-                        {label:"Department",value:department||"—"},
-                        {label:"Time Zone",value:timezone.split(")")[1]?.trim()||timezone},
-                        {label:"2FA",value:mfaEnabled?`Enabled (${mfaMethod==="app"?"Authenticator":"SMS"})`:"Not enabled"},
-                        {label:"Auth",value:authMethod==="sso"?"SSO (Google/Microsoft)":"Email & Password"},
-                      ].map(r=>(
-                        <div key={r.label} className="flex items-start gap-2 text-xs">
-                          <span className="text-gray-400 flex-shrink-0 w-20">{r.label}</span>
-                          <span className="font-medium text-gray-800 truncate">{r.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {submitted&&!isLegalComplete&&(
-                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-lg">
-                      <AlertCircle size={14} className="text-red-500 flex-shrink-0"/>
-                      <p className="text-xs text-red-600">Please accept both Terms &amp; Conditions and Privacy Policy to continue.</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <button onClick={()=>setActiveSection("security")} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                    <ChevronLeft size={14}/>Back
-                  </button>
-                  <button onClick={handleContinue}
-                    className={cn("inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all",
-                      canSubmit
-                        ?"bg-[#5C5CFF] text-white hover:bg-[#4A4AE0] shadow-md shadow-[#5C5CFF]/20"
-                        :"bg-gray-200 text-gray-400 cursor-not-allowed"
-                    )}>
-                    Continue to Workspace Setup<ArrowRight size={15}/>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Getting Started Page ───────────────────────────────────────────────────────
-const GS_STEPS = [
-  "Organization Information","Branch & Locations","Departments","Designations",
-  "Holiday Calendar","Shift Management","Attendance Policy","Leave Policy",
-  "Approval Workflow","Roles & Permissions","Employees","Launch Workspace",
-];
-
-function GettingStartedPage({ onStart, onSkip }: { onStart:()=>void; onSkip:()=>void }) {
-  const [slide, setSlide] = useState(0);
-  const SLIDES = [
-    { title:"Welcome to Attendance HRMS", body:"Your complete HR workspace — attendance, leave, shifts, teams and approvals all in one place.", icon:Users },
-    { title:"Set up in minutes", body:"Our guided setup wizard walks you through every configuration step. You can always come back and change anything.", icon:CheckCircle },
-    { title:"Everything connected", body:"Every module talks to every other. Shifts connect to attendance, leave connects to approvals, and teams connect to everything.", icon:Zap },
-  ];
-  const S = SLIDES[slide];
-
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Left — illustration + intro */}
-      <div className="hidden lg:flex lg:w-3/5 bg-[#5C5CFF] flex-col relative overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-white/5 pointer-events-none"/>
-        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-white/5 pointer-events-none"/>
-
-        {/* Top bar */}
-        <div className="relative flex items-center gap-3 p-8">
-          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center"><Users size={16} className="text-white"/></div>
-          <span className="text-white font-semibold text-sm">Attendance HRMS</span>
-          <button onClick={onSkip} className="ml-auto text-white/50 text-xs hover:text-white/80 transition-colors">Skip tour</button>
-        </div>
-
-        {/* Illustration area */}
-        <div className="flex-1 flex flex-col items-center justify-center px-16">
-          {/* Abstract illustration */}
-          <div className="w-56 h-56 relative mb-10">
-            <div className="absolute inset-0 rounded-3xl bg-white/10 flex items-center justify-center">
-              <S.icon size={72} className="text-white/60"/>
-            </div>
-            <div className="absolute -top-4 -right-4 w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center">
-              <Users size={20} className="text-white/70"/>
-            </div>
-            <div className="absolute -bottom-4 -left-4 w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center">
-              <Clock size={16} className="text-white/70"/>
-            </div>
-            <div className="absolute top-1/2 -right-8 w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-              <CalendarDays size={14} className="text-white/60"/>
-            </div>
-          </div>
-
-          {/* Slide content */}
-          <div className="text-center max-w-md">
-            <h2 className="text-3xl font-semibold text-white mb-3 leading-tight">{S.title}</h2>
-            <p className="text-white/70 text-sm leading-relaxed">{S.body}</p>
-          </div>
-
-          {/* Carousel nav */}
-          <div className="flex items-center gap-4 mt-10">
-            <button onClick={()=>setSlide(s=>Math.max(0,s-1))} disabled={slide===0} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white disabled:opacity-30 hover:bg-white/20 transition-colors"><ChevronLeft size={16}/></button>
-            <div className="flex gap-2">
-              {SLIDES.map((_,i)=><button key={i} onClick={()=>setSlide(i)} className={cn("w-2 h-2 rounded-full transition-all",i===slide?"bg-white w-6":"bg-white/30")}/>)}
-            </div>
-            <button onClick={()=>setSlide(s=>Math.min(SLIDES.length-1,s+1))} disabled={slide===SLIDES.length-1} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white disabled:opacity-30 hover:bg-white/20 transition-colors"><ChevronRight size={16}/></button>
-          </div>
-        </div>
-      </div>
-
-      {/* Right — checklist */}
-      <div className="flex-1 flex flex-col bg-white overflow-auto">
-        <div className="flex-1 flex flex-col justify-center px-10 py-12 max-w-md mx-auto w-full">
-          <div className="mb-8">
-            <div className="inline-flex items-center gap-2 bg-[#EEF2FF] text-[#5C5CFF] text-xs font-medium px-3 py-1.5 rounded-full mb-4">
-              <Zap size={12}/>Setup takes about 5 minutes
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-1">Set up your workspace</h2>
-            <p className="text-sm text-gray-500">Complete these steps to activate all modules. You can skip steps and return later.</p>
-          </div>
-
-          {/* Checklist */}
-          <div className="space-y-1 mb-8">
-            {GS_STEPS.map((label, i) => (
-              <button key={i} onClick={()=>onStart()}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-left group transition-colors">
-                <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors",
-                  i === 0 ? "border-green-500 bg-green-500" : "border-gray-300 group-hover:border-[#5C5CFF]")}>
-                  {i === 0 && <Check size={11} className="text-white"/>}
-                </div>
-                <span className={cn("text-sm flex-1",i===0?"text-gray-400 line-through":"text-gray-700 group-hover:text-gray-900")}>{label}</span>
-                {i > 0 && <ChevronRight size={14} className="text-gray-300 group-hover:text-[#5C5CFF] flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all"/>}
-                {i === 0 && <span className="text-xs text-green-600 font-medium flex-shrink-0">Done</span>}
-              </button>
-            ))}
-          </div>
-
-          <div className="space-y-3">
-            <button onClick={()=>onStart()} className="w-full py-3 bg-[#5C5CFF] text-white text-sm font-medium rounded-xl hover:bg-[#4A4AE0] transition-colors flex items-center justify-center gap-2">
-              Start Setup <ArrowRight size={16}/>
-            </button>
-            <button onClick={onSkip} className="w-full py-2.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
-              Skip for now — go to Dashboard
-            </button>
-          </div>
-        </div>
-
-        <div className="px-10 py-4 border-t border-gray-100">
-          <p className="text-xs text-gray-400">Organization Information has been pre-configured. Continue from Branch & Locations.</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Sidebar ────────────────────────────────────────────────────────────────────
-function Sidebar({ page, navigate, collapsed, onToggle, onLogout, attendanceSection, leaveSection, teamSection, orgSection }: {
-  page:AppPage;
-  navigate:(p:AppPage, emp?:any, tabOrSection?:string)=>void;
-  collapsed:boolean;
-  onToggle:()=>void;
-  onLogout:()=>void;
-  attendanceSection: "My Space" | "My Team";
-  leaveSection: "My Space" | "My Team";
-  teamSection: "Overview" | "Management";
-  orgSection: "Overview" | "Management";
-}) {
-  const [moreOpen, setMoreOpen] = useState(true);
-
-  const isActive = (p: AppPage) => page === p || (p==="organization" && (page==="employee-add"||page==="employee-profile")) || (p==="team" && page==="team");
-
-  const NavItem = ({ id, label, icon:Icon, tabOrSection }: { id:AppPage; label:string; icon:any; tabOrSection?:string }) => (
-    <button onClick={()=>navigate(id, undefined, tabOrSection)} title={collapsed?label:undefined}
-      className={cn("w-full flex items-center gap-2.5 px-3.5 py-2 text-sm transition-colors relative",isActive(id)?"bg-[#EEF2FF] text-[#5C5CFF] font-medium":"text-gray-600 hover:bg-gray-50 hover:text-gray-800")}>
-      {isActive(id)&&<div className="absolute left-0 top-1 bottom-1 w-0.5 bg-[#5C5CFF] rounded-r"/>}
-      <Icon size={16} className="flex-shrink-0"/>{!collapsed&&<span className="whitespace-nowrap">{label}</span>}
-    </button>
-  );
-
-  const SubNavItem = ({ label, active, onClick }: { label:string; active:boolean; onClick:()=>void }) => (
-    <button onClick={onClick}
-      className={cn("w-full flex items-center gap-2.5 pl-9 pr-3.5 py-1.5 text-xs transition-colors relative",active?"text-[#5C5CFF] font-semibold":"text-gray-500 hover:text-gray-800 hover:bg-gray-50")}>
-      {active&&<div className="absolute left-[34px] w-1 h-1 rounded-full bg-[#5C5CFF]"/>}
-      {!collapsed&&<span className="whitespace-nowrap">{label}</span>}
-    </button>
-  );
-
-  return (
-    <div className={cn("bg-white border-r border-gray-200 flex flex-col flex-shrink-0 transition-all duration-200 overflow-hidden",collapsed?"w-14":"w-56")}>
-      <div className="h-14 flex items-center gap-2.5 px-3.5 border-b border-gray-200 flex-shrink-0">
-        <div className="w-8 h-8 bg-[#5C5CFF] rounded-lg flex items-center justify-center flex-shrink-0"><Users size={16} className="text-white"/></div>
-        {!collapsed&&<span className="font-semibold text-gray-800 text-sm whitespace-nowrap">Attendance HRMS</span>}
-      </div>
-
-      <div className="flex-1 overflow-y-auto py-3 overflow-x-hidden space-y-3">
-        <div className="space-y-1">
-          <NavItem id="my-space" label="Dashboard" icon={LayoutDashboard}/>
-          <NavItem id="team" label="Team" icon={Users}/>
-          <NavItem id="organization" label="Organization" icon={Building2}/>
-        </div>
-
-        <div className="border-t border-gray-150 my-2 mx-3" />
-
-        <div className="space-y-1">
-          <NavItem id="attendance" label="Attendance" icon={Clock}/>
-          <NavItem id="leave" label="Leave" icon={CalendarDays}/>
-          <NavItem id="tasks" label="Tasks" icon={ClipboardList}/>
-          <NavItem id="documents" label="Documents" icon={FileText}/>
-        </div>
-
-        <div className="border-t border-gray-150 my-2 mx-3" />
-
-        <div className="space-y-1">
-          <NavItem id="settings" label="Settings" icon={Settings}/>
-          <NavItem id="support" label="Help & Support" icon={HelpCircle}/>
-        </div>
-      </div>
-
-      <div className="border-t border-gray-200 p-2 flex-shrink-0">
-        <div className={cn("flex items-center gap-2.5 px-2 py-2 rounded-md cursor-pointer hover:bg-gray-50")} onClick={()=>navigate("profile")}>
-          <Avt initials="AA" color="#5C5CFF" size="sm"/>
-          {!collapsed&&<div className="flex-1 min-w-0"><p className="text-xs font-medium text-gray-800 truncate">Alex Admin</p><p className="text-[10px] text-gray-400 truncate">Administrator</p></div>}
-          {!collapsed&&<button onClick={e=>{e.stopPropagation();onLogout();}} className="p-1 rounded hover:bg-red-50 hover:text-red-500 text-gray-400 transition-colors flex-shrink-0" title="Logout"><LogOut size={14}/></button>}
-        </div>
-        <button onClick={onToggle} className="w-full flex items-center justify-center py-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md mt-1 transition-colors">
-          {collapsed?<ChevronRight size={14}/>:<ChevronLeft size={14}/>}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── Header ─────────────────────────────────────────────────────────────────────
-function Header({
-  onAI, onNotif, onQuickAction, navigate, onLogout, page,
-  mySpaceTab, setMySpaceTab,
-  teamSection, setTeamSection,
-  orgSection, setOrgSection,
-  attendanceSection, setAttendanceSection,
-  attendanceTab, setAttendanceTab,
-  leaveSection, setLeaveSection,
-  leaveTab, setLeaveTab,
-  tasksTab, setTasksTab,
-  documentsTab, setDocumentsTab,
-  settingsTab, setSettingsTab
-}: {
-  onAI:()=>void; onNotif:()=>void; onQuickAction:()=>void; navigate:(p:AppPage)=>void; onLogout:()=>void;
-  page: AppPage;
-  mySpaceTab: string; setMySpaceTab: (t:string)=>void;
-  teamSection: "Overview" | "Management"; setTeamSection: (s:"Overview"|"Management")=>void;
-  orgSection: "Overview" | "Management"; setOrgSection: (s:"Overview"|"Management")=>void;
-  attendanceSection: "My Space" | "My Team"; setAttendanceSection: (s:"My Space"|"My Team")=>void;
-  attendanceTab: string; setAttendanceTab: (t:string)=>void;
-  leaveSection: "My Space" | "My Team"; setLeaveSection: (s:"My Space"|"My Team")=>void;
-  leaveTab: string; setLeaveTab: (t:string)=>void;
-  tasksTab: string; setTasksTab: (t:string)=>void;
-  documentsTab: string; setDocumentsTab: (t:string)=>void;
-  settingsTab: string; setSettingsTab: (t:string)=>void;
-}) {
-  const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
-  const unread = NOTIFICATIONS.filter(n=>!n.read).length;
-  const results = search.length>1 ? EMPLOYEES.filter(e=>e.name.toLowerCase().includes(search.toLowerCase())||e.dept.toLowerCase().includes(search.toLowerCase())).slice(0,5) : [];
-
-  const PROFILE_ITEMS = [
-    { icon: User,        label: "View Profile",        action: ()=>navigate("profile") },
-    { icon: Settings,    label: "Account Settings",     action: ()=>navigate("settings") },
-    { icon: Shield,      label: "Manage Account",       action: ()=>navigate("manage-account") },
-    { icon: Bell,        label: "Notifications",        action: ()=>navigate("notifications") },
-    { icon: Zap,         label: "Keyboard Shortcuts",   action: ()=>setShowShortcuts(true) },
-    { icon: Globe,       label: "Switch Workspace",     action: ()=>{}, disabled: true, badge: "Soon" },
-  ];
-
-  // Dynamically determine title, switcher, and sub-tabs
-  let title = "";
-  let showSwitcher: React.ReactNode = null;
-  let tabs: string[] = [];
-  let activeTab = "";
-  let setActiveTab: (t: string) => void = () => {};
-
-  if (page === "my-space") {
-    title = "My Space";
-    tabs = ["Dashboard", "Attendance", "Leave", "Tasks", "Approvals", "Calendar"];
-    activeTab = mySpaceTab;
-    setActiveTab = setMySpaceTab;
-  } else if (page === "team") {
-    title = "Team";
-    tabs = ["Overview", "Management"];
-    activeTab = teamSection;
-    setActiveTab = (t) => setTeamSection(t as any);
-  } else if (page === "organization") {
-    title = "Organization";
-    tabs = ["Overview", "Management"];
-    activeTab = orgSection;
-    setActiveTab = (t) => setOrgSection(t as any);
-  } else if (page === "attendance") {
-    title = "Attendance";
-    showSwitcher = (
-      <div className="flex rounded-lg border border-gray-200 overflow-hidden p-0.5 bg-gray-50 gap-0.5 text-[11px] font-semibold h-fit">
-        {(["My Space", "My Team"] as const).map(s => (
-          <button key={s} onClick={() => setAttendanceSection(s)} className={cn("px-2.5 py-1 rounded-md transition-colors whitespace-nowrap", attendanceSection === s ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700")}>
-            {s}
-          </button>
-        ))}
-      </div>
-    );
-    tabs = ["Overview", "Exceptions", "Analytics"];
-    activeTab = attendanceTab;
-    setActiveTab = setAttendanceTab;
-  } else if (page === "leave") {
-    title = "Leave";
-    showSwitcher = (
-      <div className="flex rounded-lg border border-gray-200 overflow-hidden p-0.5 bg-gray-50 gap-0.5 text-[11px] font-semibold h-fit">
-        {(["My Space", "My Team"] as const).map(s => (
-          <button key={s} onClick={() => setLeaveSection(s)} className={cn("px-2.5 py-1 rounded-md transition-colors whitespace-nowrap", leaveSection === s ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700")}>
-            {s}
-          </button>
-        ))}
-      </div>
-    );
-    tabs = ["Overview", "Requests", "Analytics"];
-    activeTab = leaveTab;
-    setActiveTab = setLeaveTab;
-  } else if (page === "tasks") {
-    title = "Tasks";
-    tabs = ["Board", "List", "Calendar"];
-    activeTab = tasksTab;
-    setActiveTab = setTasksTab;
-  } else if (page === "documents") {
-    title = "Documents";
-    tabs = ["Company", "Employee", "Policies", "Templates"];
-    activeTab = documentsTab;
-    setActiveTab = setDocumentsTab;
-  } else if (page === "settings" || page === "manage-account" || page === "notifications") {
-    title = "Settings";
-    tabs = ["General", "Notifications", "Security", "Integrations", "Manage Account"];
-    activeTab = settingsTab;
-    setActiveTab = (t) => {
-      setSettingsTab(t);
-      if (t === "General") navigate("settings");
-      else if (t === "Notifications") navigate("notifications");
-      else if (t === "Manage Account") navigate("manage-account");
-    };
-  } else if (page === "support") {
-    title = "Help & Support";
-  } else if (page === "profile") {
-    title = "User Profile";
-  } else if (page === "employee-profile") {
-    title = "Employee Profile";
-  } else if (page === "employee-add") {
-    title = "Add Employee";
-  }
-
-  return (
-    <div className="bg-white border-b border-gray-200 flex flex-col flex-shrink-0 relative z-20 sticky top-0">
-      {/* Upper Row: Title, Selector & Fixed Search/Actions */}
-      <div className="h-14 flex items-center justify-between px-6 border-b border-gray-100 gap-4">
-        <div className="flex items-center gap-4">
-          <h2 className="text-base font-semibold text-gray-950">{title}</h2>
-          {showSwitcher}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="relative w-64" onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node))setOpen(false);}}>
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"/>
-            <input type="text" placeholder="Search employees, departments…" value={search} onChange={e=>{setSearch(e.target.value);setOpen(true);}} onFocus={()=>setOpen(true)}
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#5C5CFF] focus:bg-white transition-all"/>
-            {open&&results.length>0&&(
-              <div className="absolute top-full mt-1 left-0 right-0 bg-white rounded-lg border border-gray-200 shadow-lg overflow-hidden z-50">
-                {results.map(e=>(
-                  <button key={e.id} onMouseDown={()=>{navigate("employee-profile", e);setSearch("");setOpen(false);}}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 text-left">
-                    <Avt initials={e.initials} color={e.color} size="sm"/>
-                    <div><p className="text-xs text-gray-800 font-semibold">{e.name}</p><p className="text-[10px] text-gray-500">{e.designation} · {e.dept}</p></div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <button onClick={onQuickAction} className="flex items-center gap-1 px-3 py-1.5 bg-[#5C5CFF] text-white text-xs font-semibold rounded-lg hover:bg-[#4A4AE0] transition-colors"><Plus size={12}/>Create</button>
-          <button onClick={onAI} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-[#EEF2FF] hover:text-[#5C5CFF] transition-colors" title="AI Assistant"><Bot size={15}/></button>
-          <button onClick={onNotif} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors relative" title="Notifications">
-            <Bell size={15}/>
-            {unread>0&&<span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{unread}</span>}
-          </button>
-          <button onClick={()=>navigate("settings")} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors" title="Settings"><Settings size={14}/></button>
-          
-          {/* Profile Avatar + Dropdown */}
-          <div className="relative pl-3 border-l border-gray-200">
-            <button onClick={()=>setProfileOpen(v=>!v)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <Avt initials="AA" color="#5C5CFF" size="sm"/>
-              <div className="hidden md:block text-left"><p className="text-xs font-medium text-gray-800">Alex Admin</p><p className="text-[10px] text-gray-400">Administrator</p></div>
-              <ChevronDown size={12} className={cn("text-gray-400 transition-transform",profileOpen&&"rotate-180")}/>
-            </button>
-            {profileOpen&&(
-              <div className="absolute right-0 top-full mt-2 w-60 bg-white rounded-xl border border-gray-200 shadow-xl z-50 overflow-hidden" onClick={()=>setProfileOpen(false)}>
-                <div className="px-4 py-3 bg-gradient-to-br from-[#EEF2FF] to-white border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <Avt initials="AA" color="#5C5CFF" size="md"/>
-                    <div><p className="text-xs font-bold text-gray-900">Alex Admin</p><p className="text-[10px] text-gray-500">alex.admin@acmecorp.com</p><span className="text-[9px] bg-[#5C5CFF] text-white px-1.5 py-0.5 rounded-full font-medium">Administrator</span></div>
-                  </div>
-                </div>
-                <div className="py-1">
-                  {PROFILE_ITEMS.map(item=>(
-                    <button key={item.label} onClick={item.action} disabled={item.disabled} className={cn("w-full flex items-center gap-3 px-4 py-2 text-xs text-left transition-colors",item.disabled?"text-gray-300 cursor-not-allowed":"text-gray-700 hover:bg-gray-50")}>
-                      <item.icon size={13} className={item.disabled?"text-gray-300":"text-gray-400"}/>
-                      {item.label}
-                      {item.badge&&<span className="ml-auto text-[9px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full">{item.badge}</span>}
-                    </button>
-                  ))}
-                </div>
-                <div className="border-t border-gray-100 py-1">
-                  <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors">
-                    <LogOut size={13}/>Logout
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Lower Row: Context-Specific Tabs */}
-      {tabs.length > 0 && (
-        <div className="h-10 flex items-center px-6 border-t border-gray-50 overflow-x-auto whitespace-nowrap">
-          <div className="flex gap-5">
-            {tabs.map(v => (
-              <button
-                key={v}
-                onClick={() => setActiveTab(v)}
-                className={cn(
-                  "px-0.5 py-2.5 text-xs font-semibold border-b-2 transition-colors relative whitespace-nowrap -mb-px",
-                  activeTab === v ? "border-[#5C5CFF] text-[#5C5CFF]" : "border-transparent text-gray-500 hover:text-gray-750 hover:border-gray-200"
-                )}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Keyboard Shortcuts Modal */}
-      {showShortcuts&&(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={()=>setShowShortcuts(false)}>
-          <div className="absolute inset-0 bg-black/40"/>
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md p-6" onClick={e=>e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-900">Keyboard Shortcuts</h3>
-              <button onClick={()=>setShowShortcuts(false)} className="text-gray-400 hover:text-gray-600"><X size={15}/></button>
-            </div>
-            <div className="space-y-1">
-              {([["Ctrl + K","Open AI Assistant"],["Ctrl + /","Search"],["Ctrl + N","Create New"],["G then D","Go to Dashboard"],["G then T","Go to Team"],["G then A","Go to Attendance"],["G then L","Go to Leave"],["Esc","Close panel / modal"]] as [string,string][]).map(([key,desc])=>(
-                <div key={key} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 text-xs">
-                  <span className="text-gray-700">{desc}</span>
-                  <kbd className="px-2 py-1 bg-gray-100 rounded text-[10px] font-mono text-gray-600">{key}</kbd>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+import { TasksPage } from "@/modules/tasks";
+import { DocumentsPage } from "@/modules/documents";
+import { SettingsPage } from "@/modules/settings";
+import { SupportPage } from "@/modules/support";
+import { NotificationCenterPage } from "@/modules/notifications";
+import { Sidebar } from "./layouts/sidebar";
+import { AIPanel } from "./layouts/ai-panel";
+import { NotificationsPanel } from "./layouts/notifications-panel";
+import { QuickActionsMenu } from "./layouts/quick-actions-menu";
 
 
 const getAttendanceDetails = (emp: Employee) => {
@@ -1284,6 +195,638 @@ const depts = ["All",...Array.from(new Set(EMPLOYEES.map(e=>e.dept))).sort()];
 const desigs = ["All",...Array.from(new Set(EMPLOYEES.map(e=>e.designation))).sort()];
 const locations = ["All",...Array.from(new Set(EMPLOYEES.map(e=>e.branch))).sort()];
 
+interface FeedReaction {
+  emoji: string;
+  users: string[];
+}
+
+interface FeedComment {
+  id: string;
+  author: string;
+  initials: string;
+  color: string;
+  text: string;
+  time: string;
+  edited?: boolean;
+  editedTime?: string;
+  reactions?: FeedReaction[];
+  replies?: FeedComment[];
+  attachment?: { name: string; type: "image" | "file"; size: string };
+  collapsed?: boolean;
+}
+
+interface FeedPost {
+  id: string;
+  author: string;
+  initials: string;
+  color: string;
+  time: string;
+  text: string;
+  dept: string;
+  designation: string;
+  pinned: boolean;
+  saved?: boolean;
+  priority?: "High" | "Medium" | "Low";
+  resolved?: boolean;
+  edited?: boolean;
+  editedTime?: string;
+  reactions: FeedReaction[];
+  comments: FeedComment[];
+  followers?: string[];
+  attachments?: { name: string; type: "image" | "file"; size: string }[];
+}
+
+function MentionPopup({ text, setText }: { text: string; setText: (s: string) => void }) {
+  const atIndex = text.lastIndexOf("@");
+  if (atIndex === -1) return null;
+
+  // Verify there is no whitespace after @
+  const postAt = text.slice(atIndex);
+  if (postAt.includes(" ")) return null;
+
+  const query = postAt.slice(1).toLowerCase();
+  const matched = EMPLOYEES.filter(e => e.name.toLowerCase().includes(query)).slice(0, 4);
+
+  if (matched.length === 0) return null;
+
+  return (
+    <div className="absolute left-3 bottom-full mb-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 w-56 text-left">
+      <div className="px-3 py-1.5 border-b border-gray-100"><span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Mention Teammate</span></div>
+      <div className="max-h-36 overflow-auto">
+        {matched.map(emp => (
+          <button
+            key={emp.id}
+            onClick={() => {
+              const before = text.slice(0, atIndex);
+              setText(before + `@${emp.name} `);
+            }}
+            className="w-full px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+          >
+            <Avt initials={emp.initials} color={emp.color} size="xs" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-805 truncate">{emp.name}</p>
+              <p className="text-[9px] text-gray-400 truncate">{emp.dept}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CornerDownRight(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width={props.size || "24"}
+      height={props.size || "24"}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="15 10 20 15 15 20" />
+      <path d="M4 4v7a4 4 0 0 0 4 4h12" />
+    </svg>
+  );
+}
+
+function DiscussionCard({
+  post,
+  isPinned,
+  isSaved,
+  isResolved,
+  isFollower,
+  isAuthor,
+  isManagerOrAdmin,
+  onTogglePin,
+  onToggleSave,
+  onToggleResolve,
+  onToggleFollow,
+  onDelete,
+  onEdit,
+  onToggleReaction,
+  onAddComment,
+  onEditComment,
+  onDeleteComment
+}: {
+  post: FeedPost;
+  isPinned: boolean;
+  isSaved: boolean;
+  isResolved: boolean;
+  isFollower: boolean;
+  isAuthor: boolean;
+  isManagerOrAdmin: boolean;
+  onTogglePin: (id: string) => void;
+  onToggleSave: (id: string) => void;
+  onToggleResolve: (id: string) => void;
+  onToggleFollow: (id: string) => void;
+  onDelete: (id: string) => void;
+  onEdit: (post: FeedPost) => void;
+  onToggleReaction: (postId: string, emoji: string, commentId?: string) => void;
+  onAddComment: (postId: string, parentCommentId: string | null, text: string, attachment?: any) => void;
+  onEditComment: (postId: string, commentId: string, text: string) => void;
+  onDeleteComment: (postId: string, commentId: string) => void;
+}) {
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showComments, setShowComments] = useState(true);
+  const [commentText, setCommentText] = useState("");
+  const [commentAttachment, setCommentAttachment] = useState<any>(null);
+  
+  // Threading/Reply target state
+  const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  
+  // Comment Edit target state
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
+
+  // Collapse replies state
+  const [collapsedReplies, setCollapsedReplies] = useState<Record<string, boolean>>({});
+
+  const emojiOptions = ["👍", "❤️", "🎉", "😮", "👏", "💡", "📌"];
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/feed/discussion/${post.id}`);
+    alert("Discussion link copied to clipboard!");
+    setShowMenu(false);
+  };
+
+  return (
+    <div className="group relative bg-white border border-[#EEEFF2] rounded-[12px] p-5 shadow-sm hover:border-[#5C5CFF]/30 transition-all text-left">
+      {/* Floating Hover Action Bar */}
+      <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center bg-white border border-[#E8E9ED] rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-1 gap-1 z-10">
+        {/* React Trigger */}
+        <div className="relative">
+          <button
+            onClick={() => setShowEmojiPicker(prev => !prev)}
+            className={cn("p-1.5 rounded hover:bg-gray-50 text-gray-500 hover:text-gray-755", showEmojiPicker && "bg-gray-100")}
+            title="React"
+          >
+            <Star size={14} />
+          </button>
+          {showEmojiPicker && (
+            <div className="absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-full shadow-lg p-1.5 flex gap-1 z-25">
+              {emojiOptions.map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={() => {
+                    onToggleReaction(post.id, emoji);
+                    setShowEmojiPicker(false);
+                  }}
+                  className="w-7 h-7 flex items-center justify-center text-sm rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Comment Trigger */}
+        <button
+          onClick={() => setShowComments(prev => !prev)}
+          className="p-1.5 rounded hover:bg-gray-50 text-gray-550 hover:text-gray-700"
+          title="Comment"
+        >
+          <MessageCircle size={14} />
+        </button>
+
+        {/* Save Toggle */}
+        <button
+          onClick={() => onToggleSave(post.id)}
+          className={cn("p-1.5 rounded hover:bg-gray-50", isSaved ? "text-[#5C5CFF]" : "text-gray-500")}
+          title={isSaved ? "Saved" : "Save"}
+        >
+          <Bookmark size={14} fill={isSaved ? "currentColor" : "none"} />
+        </button>
+
+        {/* Follow Toggle */}
+        <button
+          onClick={() => onToggleFollow(post.id)}
+          className={cn("p-1.5 rounded hover:bg-gray-50 text-xs font-semibold px-2 flex items-center gap-1", isFollower ? "text-green-600 bg-green-50" : "text-gray-500")}
+          title={isFollower ? "Following" : "Follow"}
+        >
+          <Bell size={12} fill={isFollower ? "currentColor" : "none"} />
+          <span>{isFollower ? "Following" : "Follow"}</span>
+        </button>
+
+        {/* Overflow Menu trigger */}
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(prev => !prev)}
+            className="p-1.5 rounded hover:bg-gray-50 text-gray-550 hover:text-gray-700"
+          >
+            <MoreHorizontal size={14} />
+          </button>
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-20 py-1 w-44 text-left">
+              {(isAuthor || isManagerOrAdmin) && (
+                <button
+                  onClick={() => {
+                    onEdit(post);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <Edit size={12} />
+                  <span>Edit Post</span>
+                </button>
+              )}
+              {isManagerOrAdmin && (
+                <button
+                  onClick={() => {
+                    onTogglePin(post.id);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <Pin size={12} />
+                  <span>{isPinned ? "Unpin Post" : "Pin Post"}</span>
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  onToggleSave(post.id);
+                  setShowMenu(false);
+                }}
+                className="w-full px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <Bookmark size={12} />
+                <span>{isSaved ? "Unsave Post" : "Save Post"}</span>
+              </button>
+              <button
+                onClick={handleCopyLink}
+                className="w-full px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <Share2 size={12} />
+                <span>Copy Link</span>
+              </button>
+              {(isAuthor || isManagerOrAdmin) && (
+                <button
+                  onClick={() => {
+                    onToggleResolve(post.id);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <CheckCircle size={12} />
+                  <span>{isResolved ? "Mark as Unresolved" : "Mark as Resolved"}</span>
+                </button>
+              )}
+              {(isAuthor || isManagerOrAdmin) && (
+                <button
+                  onClick={() => {
+                    onDelete(post.id);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-1.5 text-xs text-red-650 hover:bg-red-50 flex items-center gap-2 border-t border-gray-100"
+                >
+                  <Trash2 size={12} />
+                  <span>Delete Post</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Card Header */}
+      <div className="flex items-start gap-3 mb-3">
+        <Avt initials={post.initials} color={post.color} size="sm" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold text-gray-800">{post.author}</span>
+            <span className="text-[10px] text-gray-400">{post.designation}</span>
+            <span className="text-[9px] font-bold bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded uppercase">{post.dept}</span>
+            {isPinned && <span className="text-[9px] font-bold bg-[#EEF2FF] text-[#5C5CFF] px-1.5 py-0.5 rounded uppercase flex items-center gap-1"><Pin size={8} /> Pinned</span>}
+            {isResolved && <span className="text-[9px] font-bold bg-green-50 text-green-700 px-1.5 py-0.5 rounded uppercase flex items-center gap-1"><CheckCircle size={8} /> Resolved</span>}
+            {post.priority && (
+              <span className={cn(
+                "text-[9px] font-bold px-1.5 py-0.5 rounded uppercase",
+                post.priority === "High" ? "bg-red-50 text-red-600" : post.priority === "Medium" ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"
+              )}>
+                {post.priority} Priority
+              </span>
+            )}
+            <span className="text-[10px] text-gray-400 ml-auto">{post.time}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Discussion Body */}
+      <div className="space-y-2">
+        <p className="text-xs text-gray-700 leading-relaxed font-medium whitespace-pre-line">{post.text}</p>
+        
+        {post.edited && (
+          <p className="text-[10px] text-gray-450 italic">Edited • {post.editedTime || "2 mins ago"}</p>
+        )}
+
+        {/* Attachments rendering */}
+        {post.attachments && post.attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2.5 mt-2">
+            {post.attachments.map((att, i) => (
+              <div key={i} className="border border-gray-150 rounded-xl overflow-hidden bg-gray-50 flex items-center gap-3 p-3 max-w-[280px]">
+                {att.type === "image" ? (
+                  <div className="w-10 h-10 bg-gray-200 rounded flex-shrink-0 flex items-center justify-center font-bold text-white text-xs bg-cover bg-center">🖼️</div>
+                ) : (
+                  <div className="w-10 h-10 bg-red-100 rounded flex-shrink-0 flex items-center justify-center text-red-650 text-xs font-bold"><FileText size={16} /></div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-gray-800 truncate">{att.name}</p>
+                  <p className="text-[10px] text-gray-400">{att.size}</p>
+                </div>
+                <button className="text-xs text-[#5C5CFF] font-semibold hover:underline ml-auto flex items-center gap-0.5"><Download size={11} />Download</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Reactions Display */}
+      {post.reactions.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap mt-3.5">
+          {post.reactions.map(r => {
+            const hasReacted = r.users.includes("Alex Admin");
+            return (
+              <button
+                key={r.emoji}
+                onClick={() => onToggleReaction(post.id, r.emoji)}
+                className={cn(
+                  "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-xs transition-colors",
+                  hasReacted ? "border-[#5C5CFF]/30 bg-[#EEF2FF] text-[#5C5CFF] font-bold" : "border-gray-150 hover:border-gray-205 text-gray-500 bg-white"
+                )}
+                title={r.users.join(", ")}
+              >
+                <span>{r.emoji}</span>
+                <span>{r.users.length}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Comment Section (Collapsible) */}
+      {showComments && (
+        <div className="border-t border-gray-100 mt-4 pt-4 space-y-4">
+          {/* Threaded list of comments */}
+          {post.comments.length > 0 && (
+            <div className="space-y-4 max-h-[400px] overflow-auto pr-1">
+              {post.comments.map(comment => {
+                const replies = comment.replies || [];
+                const isCollapsed = collapsedReplies[comment.id];
+                
+                return (
+                  <div key={comment.id} className="space-y-3 pl-1 border-l-2 border-gray-100 hover:border-[#5C5CFF]/30 transition-colors">
+                    {/* Main comment card */}
+                    <div className="group/comment relative flex items-start gap-2.5">
+                      <Avt initials={comment.initials} color={comment.color} size="xs" />
+                      <div className="flex-1 bg-gray-50 rounded-xl p-3 text-left">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-bold text-gray-800">{comment.author}</span>
+                          <span className="text-[10px] text-gray-400">{comment.time}</span>
+                          {comment.edited && <span className="text-[9px] text-gray-400 italic">(edited)</span>}
+                        </div>
+                        {editingCommentId === comment.id ? (
+                          <div className="space-y-2">
+                            <textarea
+                              rows={2}
+                              value={editingCommentText}
+                              onChange={e => setEditingCommentText(e.target.value)}
+                              className="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-[#5C5CFF] outline-none bg-white"
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  onEditComment(post.id, comment.id, editingCommentText);
+                                  setEditingCommentId(null);
+                                }}
+                                className="px-2.5 py-1 bg-[#5C5CFF] text-white text-[10px] rounded-lg font-bold"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingCommentId(null)}
+                                className="px-2.5 py-1 text-[10px] text-gray-450 border border-gray-200 rounded-lg"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-750 leading-relaxed font-semibold">{comment.text}</p>
+                        )}
+
+                        {comment.attachment && (
+                          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-[#5C5CFF] font-semibold bg-white border border-gray-150 rounded px-2 py-1 max-w-[180px]">
+                            <Paperclip size={10} />
+                            <span className="truncate">{comment.attachment.name}</span>
+                          </div>
+                        )}
+
+                        {/* Comment Reactions */}
+                        {(comment.reactions || []).length > 0 && (
+                          <div className="flex gap-1 mt-2">
+                            {(comment.reactions || []).map(cr => (
+                              <button
+                                key={cr.emoji}
+                                onClick={() => onToggleReaction(post.id, cr.emoji, comment.id)}
+                                className="px-1.5 py-0.5 bg-white border border-gray-150 rounded-full text-[10px] text-gray-650 hover:bg-gray-100 flex items-center gap-0.5 font-bold"
+                              >
+                                <span>{cr.emoji}</span>
+                                <span>{cr.users.length}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Comment hover action bar */}
+                      <div className="absolute right-3 top-3 opacity-0 group-hover/comment:opacity-100 transition-opacity flex items-center bg-white border border-gray-150 rounded shadow p-0.5 gap-0.5">
+                        <button
+                          onClick={() => onToggleReaction(post.id, "👍", comment.id)}
+                          className="p-1 hover:bg-gray-100 text-[10px] text-gray-500"
+                          title="React 👍"
+                        >
+                          👍
+                        </button>
+                        <button
+                          onClick={() => {
+                            setReplyToCommentId(comment.id);
+                            setReplyText("");
+                          }}
+                          className="p-1 hover:bg-gray-100 text-gray-450 hover:text-gray-700"
+                          title="Reply"
+                        >
+                          <CornerDownRight size={10} />
+                        </button>
+                        {comment.author === "Alex Admin" && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingCommentId(comment.id);
+                                setEditingCommentText(comment.text);
+                              }}
+                              className="p-1 hover:bg-gray-100 text-gray-455 hover:text-[#5C5CFF]"
+                              title="Edit"
+                            >
+                              <Edit size={10} />
+                            </button>
+                            <button
+                              onClick={() => onDeleteComment(post.id, comment.id)}
+                              className="p-1 hover:bg-gray-100 text-gray-455 hover:text-red-500"
+                              title="Delete"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Collapsible replies indicator */}
+                    {replies.length > 0 && (
+                      <div className="pl-6 flex items-center gap-2">
+                        <button
+                          onClick={() => setCollapsedReplies(prev => ({ ...prev, [comment.id]: !prev[comment.id] }))}
+                          className="text-[10px] text-gray-400 hover:text-[#5C5CFF] font-semibold flex items-center gap-1"
+                        >
+                          {isCollapsed ? `Expand ${replies.length} replies` : `Collapse replies`}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Replies timeline */}
+                    {!isCollapsed && replies.map(reply => (
+                      <div key={reply.id} className="group/reply relative flex items-start gap-2.5 pl-6">
+                        <Avt initials={reply.initials} color={reply.color} size="xs" />
+                        <div className="flex-1 bg-white border border-gray-150 rounded-xl p-2.5 text-left shadow-sm">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-[10px] font-bold text-gray-800">{reply.author}</span>
+                            <span className="text-[9px] text-gray-400">{reply.time}</span>
+                          </div>
+                          <p className="text-xs text-gray-650 leading-relaxed font-semibold">{reply.text}</p>
+                        </div>
+                        {reply.author === "Alex Admin" && (
+                          <div className="absolute right-3 top-3 opacity-0 group-hover/reply:opacity-100 transition-opacity flex items-center bg-white border border-gray-150 rounded shadow p-0.5 gap-0.5 z-10">
+                            <button
+                              onClick={() => onDeleteComment(post.id, reply.id)}
+                              className="p-1 hover:bg-gray-100 text-gray-455 hover:text-red-500"
+                              title="Delete Reply"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Nested reply input box */}
+                    {replyToCommentId === comment.id && (
+                      <div className="pl-6 relative">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={replyText}
+                            onChange={e => setReplyText(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === "Enter" && replyText.trim()) {
+                                onAddComment(post.id, comment.id, replyText);
+                                setReplyToCommentId(null);
+                                setReplyText("");
+                              }
+                            }}
+                            placeholder={`Reply to ${comment.author}...`}
+                            className="flex-1 px-3 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-[#5C5CFF]"
+                          />
+                          <button
+                            onClick={() => {
+                              if (replyText.trim()) {
+                                onAddComment(post.id, comment.id, replyText);
+                                setReplyToCommentId(null);
+                                setReplyText("");
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-[#5C5CFF] text-white text-[10px] font-bold rounded-lg"
+                          >
+                            Reply
+                          </button>
+                          <button onClick={() => setReplyToCommentId(null)} className="p-1.5 text-gray-450 hover:text-gray-700 border border-gray-200 rounded-lg bg-white"><X size={12} /></button>
+                        </div>
+                        <MentionPopup text={replyText} setText={setReplyText} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* New comment input area */}
+          <div className="flex gap-2.5 pt-2 relative">
+            <Avt initials="AA" color="#5C5CFF" size="xs" />
+            <div className="flex-1 flex flex-col gap-1.5">
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && commentText.trim()) {
+                      onAddComment(post.id, null, commentText, commentAttachment);
+                      setCommentText("");
+                      setCommentAttachment(null);
+                    }
+                  }}
+                  placeholder="Write a comment..."
+                  className="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-[#5C5CFF] bg-gray-50"
+                />
+                
+                {/* Simulated file attachments inside comment */}
+                <button
+                  onClick={() => {
+                    setCommentAttachment({ name: `Attachment_${Date.now().toString().slice(-4)}.pdf` });
+                  }}
+                  className={cn("p-1.5 border border-gray-200 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-55 flex items-center justify-center bg-white", commentAttachment && "border-[#5C5CFF] text-[#5C5CFF] bg-[#EEF2FF]")}
+                  title="Simulate attachment"
+                >
+                  <Paperclip size={13} />
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (commentText.trim()) {
+                      onAddComment(post.id, null, commentText, commentAttachment);
+                      setCommentText("");
+                      setCommentAttachment(null);
+                    }
+                  }}
+                  className="px-3 bg-[#5C5CFF] text-white text-xs font-semibold rounded-lg hover:bg-[#4A4AE0] transition-colors"
+                >
+                  Post
+                </button>
+              </div>
+
+              {commentAttachment && (
+                <div className="flex items-center gap-1.5 text-[9px] text-[#5C5CFF] font-semibold bg-white border border-gray-150 rounded px-2 py-0.5 max-w-[180px]">
+                  <Paperclip size={8} />
+                  <span className="truncate">{commentAttachment.name}</span>
+                  <button onClick={() => setCommentAttachment(null)} className="text-red-505 ml-auto"><X size={8} /></button>
+                </div>
+              )}
+
+              <MentionPopup text={commentText} setText={setCommentText} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 function TeamPage({
   navigate,
   activeTab,
@@ -1300,7 +843,9 @@ function TeamPage({
   deptFilter,
   setDeptFilter,
   locationFilter,
-  setLocationFilter
+  setLocationFilter,
+  showCreateDiscussion,
+  setShowCreateDiscussion
 }: {
   navigate: (p: AppPage, emp?: any, tabOrSection?: string) => void;
   activeTab: string;
@@ -1318,6 +863,8 @@ function TeamPage({
   setDeptFilter: (v: string) => void;
   locationFilter: string;
   setLocationFilter: (v: string) => void;
+  showCreateDiscussion: boolean;
+  setShowCreateDiscussion: (b: boolean) => void;
 }) {
   const [tab, setTab] = useState("Overview");
 
@@ -1330,8 +877,6 @@ function TeamPage({
   const [desigFilter, setDesigFilter] = useState("All");
   const [selectedEmp, setSelectedEmp] = useState<Employee|null>(null);
   const [empTab, setEmpTab] = useState("Activities");
-  const [feedPost, setFeedPost] = useState("");
-  const [likes, setLikes] = useState<Record<string,number>>({F1:12,F2:5,F3:8});
   const [teamReqs, setTeamReqs] = useState(LEAVE_REQUESTS);
   const [tApproveId, setTApproveId] = useState<string|null>(null);
   const [tRejectId,  setTRejectId]  = useState<string|null>(null);
@@ -1344,6 +889,381 @@ function TeamPage({
   const [showCallModal,    setShowCallModal]     = useState(false);
   const [showAssignTask,   setShowAssignTask]    = useState(false);
   const [showAssignShift,  setShowAssignShift]   = useState(false);
+  // --- FEED COLLABORATION SPACE STATE ---
+  const [posts, setPosts] = useState<FeedPost[]>([
+    {
+      id: "F1",
+      author: "Alex Admin",
+      initials: "AA",
+      color: "#5C5CFF",
+      time: "2 hours ago",
+      text: "Reminder: Q2 All-Hands Meeting is on July 15th at 3pm EST. Please confirm your attendance by end of week.",
+      dept: "All",
+      designation: "VP of HR",
+      pinned: true,
+      saved: false,
+      priority: "High",
+      resolved: false,
+      reactions: [
+        { emoji: "👍", users: ["Aisha Thompson", "David Chen"] },
+        { emoji: "🎉", users: ["Sarah Mitchell"] }
+      ],
+      followers: ["Alex Admin", "Aisha Thompson"],
+      attachments: [
+        { name: "All-Hands_Agenda.pdf", type: "file", size: "1.2 MB" }
+      ],
+      comments: [
+        {
+          id: "FC1",
+          author: "Aisha Thompson",
+          initials: "AT",
+          color: EMP_COLORS[4],
+          text: "I will be there! I've also uploaded the preliminary HR slides for review.",
+          time: "1 hour ago",
+          reactions: [{ emoji: "❤️", users: ["Alex Admin"] }],
+          replies: [
+            {
+              id: "FC1_1",
+              author: "Alex Admin",
+              initials: "AA",
+              color: "#5C5CFF",
+              text: "Thanks Aisha, the slides look great. Let's make sure James reviews them too.",
+              time: "45 mins ago"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: "F2",
+      author: "Aisha Thompson",
+      initials: "AT",
+      color: EMP_COLORS[4],
+      time: "5 hours ago",
+      text: "Updated leave policy for FY2025 has been published. Key change: employees with 3+ years tenure get 20 days annual leave. Review the document in Documents.",
+      dept: "HR",
+      designation: "HR Manager",
+      pinned: false,
+      saved: true,
+      priority: "Medium",
+      resolved: true,
+      reactions: [
+        { emoji: "👍", users: ["David Chen", "Ahmad Patel"] }
+      ],
+      comments: []
+    },
+    {
+      id: "F3",
+      author: "David Chen",
+      initials: "DC",
+      color: EMP_COLORS[3],
+      time: "Yesterday",
+      text: "Welcome Yuki Tanaka to the Engineering team! Yuki joins as a Frontend Developer and will be working on the Design System initiative. Please give them a warm welcome.",
+      dept: "Engineering",
+      designation: "VP Engineering",
+      pinned: false,
+      saved: false,
+      reactions: [
+        { emoji: "🎉", users: ["Alex Admin", "Aisha Thompson", "Sarah Mitchell", "James O'Brien"] }
+      ],
+      attachments: [
+        { name: "Yuki_Photo.jpg", type: "image", size: "2.4 MB" }
+      ],
+      comments: [
+        {
+          id: "FC2",
+          author: "Sarah Mitchell",
+          initials: "SM",
+          color: EMP_COLORS[1],
+          text: "Welcome Yuki! Let's schedule some onboarding time soon.",
+          time: "Yesterday"
+        }
+      ]
+    }
+  ]);
+
+  // Feed Filter States
+  const [feedPinnedOnly, setFeedPinnedOnly] = useState(false);
+  const [feedSavedOnly, setFeedSavedOnly] = useState(false);
+  const [feedResolvedFilter, setFeedResolvedFilter] = useState<"All"|"Resolved"|"Unresolved">("All");
+  const [feedPriorityFilter, setFeedPriorityFilter] = useState("All");
+  const [feedDeptFilter, setFeedDeptFilter] = useState("All");
+  const [feedSearch, setFeedSearch] = useState("");
+  const [showFeedFilterPanel, setShowFeedFilterPanel] = useState(false);
+
+  // Discussion create state
+  const [newDiscText, setNewDiscText] = useState("");
+  const [newDiscPriority, setNewDiscPriority] = useState<"High"|"Medium"|"Low"|"None">("None");
+  const [newDiscDept, setNewDiscDept] = useState("All");
+  const [newDiscAttachments, setNewDiscAttachments] = useState<{name:string, type:"image"|"file", size:string}[]>([]);
+
+  // Discussion Edit state
+  const [editingPost, setEditingPost] = useState<FeedPost | null>(null);
+
+  // Centralized Modal State System
+  const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [feedToast, setFeedToast] = useState<string | null>(null);
+  const triggerFeedToast = (msg: string) => {
+    setFeedToast(msg);
+    setTimeout(() => setFeedToast(null), 2500);
+  };
+
+  const handleCloseModal = () => {
+    setActiveModal(null);
+    setShowCreateDiscussion(false);
+    setEditingPost(null);
+    setConfirmDeleteId(null);
+    setIsDeleting(false);
+  };
+
+  // Sync prop-based triggers to activeModal
+  useEffect(() => {
+    if (showCreateDiscussion) {
+      setActiveModal("new-discussion");
+    }
+  }, [showCreateDiscussion]);
+
+  useEffect(() => {
+    if (showAssignTask) {
+      setActiveModal("assign-task");
+    } else if (activeModal === "assign-task") {
+      setActiveModal(null);
+    }
+  }, [showAssignTask]);
+
+  useEffect(() => {
+    if (showAssignShift) {
+      setActiveModal("assign-shift");
+    } else if (activeModal === "assign-shift") {
+      setActiveModal(null);
+    }
+  }, [showAssignShift]);
+
+  useEffect(() => {
+    if (showEmailModal) {
+      setActiveModal("email");
+    } else if (activeModal === "email") {
+      setActiveModal(null);
+    }
+  }, [showEmailModal]);
+
+  useEffect(() => {
+    if (showCallModal) {
+      setActiveModal("call");
+    } else if (activeModal === "call") {
+      setActiveModal(null);
+    }
+  }, [showCallModal]);
+
+  useEffect(() => {
+    if (tApproveId) {
+      setActiveModal("approve-leave");
+    } else if (activeModal === "approve-leave") {
+      setActiveModal(null);
+    }
+  }, [tApproveId]);
+
+  useEffect(() => {
+    if (tRejectId) {
+      setActiveModal("reject-leave");
+    } else if (activeModal === "reject-leave") {
+      setActiveModal(null);
+    }
+  }, [tRejectId]);
+
+  useEffect(() => {
+    if (showTeamFilter) {
+      setActiveModal("filter-members");
+    } else if (activeModal === "filter-members") {
+      setActiveModal(null);
+    }
+  }, [showTeamFilter]);
+
+  // Discussion Delete state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // --- FEED COLLABORATION HELPER FUNCTIONS ---
+  const togglePin = (id: string) => {
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, pinned: !p.pinned } : p));
+  };
+
+  const toggleSave = (id: string) => {
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, saved: !p.saved } : p));
+  };
+
+  const toggleResolve = (id: string) => {
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, resolved: !p.resolved } : p));
+  };
+
+  const toggleFollow = (id: string) => {
+    setPosts(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      const followers = p.followers || [];
+      const isFollowing = followers.includes("Alex Admin");
+      return {
+        ...p,
+        followers: isFollowing ? followers.filter(f => f !== "Alex Admin") : [...followers, "Alex Admin"]
+      };
+    }));
+  };
+
+  const toggleReaction = (postId: string, emoji: string, commentId?: string) => {
+    const currentUser = "Alex Admin";
+    setPosts(prev => prev.map(p => {
+      if (p.id !== postId) return p;
+
+      if (!commentId) {
+        // Toggle on post
+        const reactions = [...p.reactions];
+        const existing = reactions.find(r => r.emoji === emoji);
+        if (existing) {
+          if (existing.users.includes(currentUser)) {
+            existing.users = existing.users.filter(u => u !== currentUser);
+          } else {
+            existing.users.push(currentUser);
+          }
+        } else {
+          reactions.push({ emoji, users: [currentUser] });
+        }
+        return { ...p, reactions: reactions.filter(r => r.users.length > 0) };
+      } else {
+        // Toggle on comment
+        const updateComments = (list: FeedComment[]): FeedComment[] => {
+          return list.map(c => {
+            if (c.id === commentId) {
+              const reactions = [...(c.reactions || [])];
+              const existing = reactions.find(r => r.emoji === emoji);
+              if (existing) {
+                if (existing.users.includes(currentUser)) {
+                  existing.users = existing.users.filter(u => u !== currentUser);
+                } else {
+                  existing.users.push(currentUser);
+                }
+              } else {
+                reactions.push({ emoji, users: [currentUser] });
+              }
+              return { ...c, reactions: reactions.filter(r => r.users.length > 0) };
+            }
+            if (c.replies) {
+              return { ...c, replies: updateComments(c.replies) };
+            }
+            return c;
+          });
+        };
+        return { ...p, comments: updateComments(p.comments) };
+      }
+    }));
+  };
+
+  const handleCreatePost = (text: string, priority: "High" | "Medium" | "Low" | "None", dept: string, attachments: any[]) => {
+    const newPost: FeedPost = {
+      id: `F${Date.now()}`,
+      author: "Alex Admin",
+      initials: "AA",
+      color: "#5C5CFF",
+      time: "Just now",
+      text,
+      dept: dept === "All" ? "All" : dept,
+      designation: "VP of HR",
+      pinned: false,
+      saved: false,
+      priority: priority === "None" ? undefined : priority,
+      resolved: false,
+      reactions: [],
+      comments: [],
+      followers: ["Alex Admin"],
+      attachments: attachments.length > 0 ? attachments : undefined
+    };
+    setPosts(prev => [newPost, ...prev]);
+  };
+
+  const handleEditPost = (id: string, text: string, priority: "High" | "Medium" | "Low" | "None", attachments: any[]) => {
+    setPosts(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      return {
+        ...p,
+        text,
+        priority: priority === "None" ? undefined : priority,
+        attachments: attachments.length > 0 ? attachments : undefined,
+        edited: true,
+        editedTime: "Just now"
+      };
+    }));
+  };
+
+  const handleDeletePost = (id: string) => {
+    setPosts(prev => prev.filter(p => p.id !== id));
+  };
+
+  const handleAddComment = (postId: string, parentCommentId: string | null, text: string, attachment?: any) => {
+    const newComment: FeedComment = {
+      id: `FC${Date.now()}`,
+      author: "Alex Admin",
+      initials: "AA",
+      color: "#5C5CFF",
+      text,
+      time: "Just now",
+      attachment,
+      replies: []
+    };
+
+    setPosts(prev => prev.map(p => {
+      if (p.id !== postId) return p;
+
+      if (!parentCommentId) {
+        return { ...p, comments: [...p.comments, newComment] };
+      } else {
+        const insertReply = (list: FeedComment[]): FeedComment[] => {
+          return list.map(c => {
+            if (c.id === parentCommentId) {
+              return { ...c, replies: [...(c.replies || []), newComment] };
+            }
+            if (c.replies) {
+              return { ...c, replies: insertReply(c.replies) };
+            }
+            return c;
+          });
+        };
+        return { ...p, comments: insertReply(p.comments) };
+      }
+    }));
+  };
+
+  const handleEditComment = (postId: string, commentId: string, text: string) => {
+    setPosts(prev => prev.map(p => {
+      if (p.id !== postId) return p;
+      const updateText = (list: FeedComment[]): FeedComment[] => {
+        return list.map(c => {
+          if (c.id === commentId) {
+            return { ...c, text, edited: true, editedTime: "Just now" };
+          }
+          if (c.replies) {
+            return { ...c, replies: updateText(c.replies) };
+          }
+          return c;
+        });
+      };
+      return { ...p, comments: updateText(p.comments) };
+    }));
+  };
+
+  const handleDeleteComment = (postId: string, commentId: string) => {
+    setPosts(prev => prev.map(p => {
+      if (p.id !== postId) return p;
+      const removeComment = (list: FeedComment[]): FeedComment[] => {
+        return list.filter(c => c.id !== commentId).map(c => {
+          if (c.replies) {
+            return { ...c, replies: removeComment(c.replies) };
+          }
+          return c;
+        });
+      };
+      return { ...p, comments: removeComment(p.comments) };
+    }));
+  };
+
+
 
   // Redesigned Tasks selection
   const [selectedTeamTask, setSelectedTeamTask] = useState<any>(null);
@@ -1359,17 +1279,27 @@ function TeamPage({
     return initial;
   });
 
-  const approveT = (id:string) => { setTApproveId(id); setTApproveComment(""); };
-  const rejectT  = (id:string) => { setTRejectId(id);  setTRejectReason(""); };
+  const approveT = (id:string) => {
+    setTApprovalDetailId(null);
+    setTApproveId(id);
+    setTApproveComment("");
+    setActiveModal("approve-leave");
+  };
+  const rejectT  = (id:string) => {
+    setTApprovalDetailId(null);
+    setTRejectId(id);
+    setTRejectReason("");
+    setActiveModal("reject-leave");
+  };
   const confirmApproveT = () => {
     if (!tApproveId) return;
     setTeamReqs(r=>r.map(x=>x.id===tApproveId?{...x,status:"Approved"}:x));
-    setTApproveId(null); setTApproveComment("");
+    handleCloseModal();
   };
   const confirmRejectT = () => {
     if (!tRejectId || !tRejectReason.trim()) return;
     setTeamReqs(r=>r.map(x=>x.id===tRejectId?{...x,status:"Rejected",rejectReason:tRejectReason}:x));
-    setTRejectId(null); setTRejectReason("");
+    handleCloseModal();
   };
 
   // Team Announcements
@@ -1764,57 +1694,488 @@ function TeamPage({
 
         {/* ── FEED TAB ── */}
         {tab==="Feed"&&(
-          <div className="flex h-full justify-center">
-            <div className="flex-1 overflow-auto p-5 max-w-2xl">
-              {/* Compose */}
-              {showCreatePost && (
-                <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
-                  <div className="flex items-start gap-3">
-                    <Avt initials="AA" color="#5C5CFF" size="sm"/>
-                    <div className="flex-1">
-                      <textarea value={feedPost} onChange={e=>setFeedPost(e.target.value)} placeholder="Write something on feed..." className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#5C5CFF] min-h-[72px]"/>
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex gap-2">
-                          <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-gray-100"><Upload size={12}/>Attach</button>
-                        </div>
-                        <Btn size="sm" disabled={!feedPost.trim()} onClick={()=>{setFeedPost(""); setShowCreatePost(false);}}><Send size={12}/>Post</Btn>
-                      </div>
-                    </div>
-                  </div>
+          <div className="flex h-full w-full bg-[#F7F8FA] overflow-hidden text-left">
+            {/* Timeline container */}
+            <div className="flex-1 flex flex-col h-full overflow-hidden p-6 max-w-4xl mx-auto w-full">
+              {/* Header inside feed tab (Toolbar was removed) */}
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200 mb-5 flex-shrink-0">
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">Collaboration Feed</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">Share ideas, ask questions, and collaborate with your team</p>
                 </div>
-              )}
-              {/* Posts */}
-              <div className="space-y-3">
-                {FEED_POSTS.map(p=>(
-                  <div key={p.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-[#5C5CFF]/20 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <Avt initials={p.initials} color={p.color} size="sm"/>
-                      <div className="flex-1 text-left">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-semibold text-gray-800">{p.author}</span>
-                          {p.pinned&&<span className="text-[9px] bg-[#EEF2FF] text-[#5C5CFF] px-1.5 py-0.5 rounded font-semibold">PINNED</span>}
-                          <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{p.dept}</span>
-                          <span className="text-[10px] text-gray-400 ml-auto">{p.time}</span>
-                        </div>
-                        <p className="text-sm text-gray-700 leading-relaxed">{p.text}</p>
-                        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
-                          <button onClick={()=>setLikes(l=>({...l,[p.id]:(l[p.id]||0)+1}))} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#5C5CFF] transition-colors">
-                            <Star size={13}/>{likes[p.id]||0} Like
-                          </button>
-                          <button className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#5C5CFF] transition-colors"><Send size={13}/>Comment</button>
-                        </div>
-                      </div>
-                    </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-64 h-[34px] flex items-center gap-2 px-3 bg-white border border-[#E8E9ED] rounded-[8px]">
+                    <Search size={13} className="text-[#9CA0AB] flex-shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search discussions..."
+                      value={feedSearch}
+                      onChange={(e) => setFeedSearch(e.target.value)}
+                      className="w-full bg-transparent text-xs text-[#16181D] placeholder-[#9CA0AB] outline-none"
+                    />
                   </div>
-                ))}
+                  <button
+                    onClick={() => setShowFeedFilterPanel(true)}
+                    className={cn(
+                      "flex items-center gap-1.5 h-[34px] px-3 border rounded-lg text-xs font-semibold hover:bg-gray-50 transition-colors bg-white",
+                      (feedPinnedOnly || feedSavedOnly || feedResolvedFilter !== "All" || feedPriorityFilter !== "All" || feedDeptFilter !== "All")
+                        ? "border-[#5C5CFF] bg-[#EEF2FF] text-[#5C5CFF]"
+                        : "border-gray-200 text-gray-600"
+                    )}
+                    title="Filters"
+                  >
+                    <SlidersHorizontal size={13} />
+                    <span>Filter</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Discussion timeline list */}
+              <div className="flex-1 overflow-auto space-y-4 pr-1 pb-10">
+                {(() => {
+                  const filteredPosts = posts.filter(p => {
+                    // Pinned filter
+                    if (feedPinnedOnly && !p.pinned) return false;
+                    // Saved filter
+                    if (feedSavedOnly && !p.saved) return false;
+                    // Resolved filter
+                    if (feedResolvedFilter === "Resolved" && !p.resolved) return false;
+                    if (feedResolvedFilter === "Unresolved" && p.resolved) return false;
+                    // Priority filter
+                    if (feedPriorityFilter !== "All" && p.priority !== feedPriorityFilter) return false;
+                    // Dept filter
+                    if (feedDeptFilter !== "All" && p.dept !== feedDeptFilter && p.dept !== "All") return false;
+                    // Search query
+                    if (feedSearch.trim() !== "") {
+                      const q = feedSearch.toLowerCase();
+                      const matchText = p.text.toLowerCase().includes(q);
+                      const matchAuthor = p.author.toLowerCase().includes(q);
+                      const matchComments = p.comments.some(c => c.text.toLowerCase().includes(q) || c.author.toLowerCase().includes(q) || (c.replies || []).some(r => r.text.toLowerCase().includes(q)));
+                      if (!matchText && !matchAuthor && !matchComments) return false;
+                    }
+                    return true;
+                  });
+
+                  if (filteredPosts.length === 0) {
+                    return (
+                      <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center shadow-sm">
+                        <MessageSquare size={32} className="text-gray-300 mx-auto mb-3" />
+                        <p className="text-sm font-semibold text-gray-800">No discussions match your filters</p>
+                        <p className="text-xs text-gray-405 mt-1">Try resetting the filters or creating a new discussion.</p>
+                      </div>
+                    );
+                  }
+
+                  return filteredPosts.map(p => {
+                    const isPinned = p.pinned;
+                    const isSaved = p.saved || false;
+                    const isResolved = p.resolved || false;
+                    const isFollower = (p.followers || []).includes("Alex Admin");
+                    const isAuthor = p.author === "Alex Admin";
+                    const isManagerOrAdmin = true;
+
+                    return (
+                      <DiscussionCard
+                        key={p.id}
+                        post={p}
+                        isPinned={isPinned}
+                        isSaved={isSaved}
+                        isResolved={isResolved}
+                        isFollower={isFollower}
+                        isAuthor={isAuthor}
+                        isManagerOrAdmin={isManagerOrAdmin}
+                        onTogglePin={togglePin}
+                        onToggleSave={toggleSave}
+                        onToggleResolve={toggleResolve}
+                        onToggleFollow={toggleFollow}
+                        onDelete={(id) => {
+                          setConfirmDeleteId(id);
+                          setActiveModal("delete-discussion");
+                        }}
+                        onEdit={(post) => {
+                          setEditingPost(post);
+                          setActiveModal("edit-discussion");
+                        }}
+                        onToggleReaction={toggleReaction}
+                        onAddComment={handleAddComment}
+                        onEditComment={handleEditComment}
+                        onDeleteComment={handleDeleteComment}
+                      />
+                    );
+                  });
+                })()}
               </div>
             </div>
+
+            {/* Filter Drawer */}
+            <Drawer
+              isOpen={showFeedFilterPanel}
+              onClose={() => setShowFeedFilterPanel(false)}
+              title="Filter Discussions"
+              footer={
+                <div className="flex gap-2 w-full justify-end">
+                  <Btn
+                    variant="outline"
+                    onClick={() => {
+                      setFeedPinnedOnly(false);
+                      setFeedSavedOnly(false);
+                      setFeedResolvedFilter("All");
+                      setFeedPriorityFilter("All");
+                      setFeedDeptFilter("All");
+                      setShowFeedFilterPanel(false);
+                    }}
+                  >
+                    Reset Filters
+                  </Btn>
+                  <Btn variant="primary" onClick={() => setShowFeedFilterPanel(false)}>Apply</Btn>
+                </div>
+              }
+            >
+              <div className="space-y-5 text-left">
+                {/* Fast toggles */}
+                <div className="bg-white rounded-xl border border-gray-150 p-4 space-y-3.5 shadow-sm">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Fast Filters</h4>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2.5 text-xs text-gray-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={feedPinnedOnly}
+                        onChange={e => setFeedPinnedOnly(e.target.checked)}
+                        className="rounded border-gray-300 text-[#5C5CFF] focus:ring-[#5C5CFF]"
+                      />
+                      <span>Pinned items only</span>
+                    </label>
+                    <label className="flex items-center gap-2.5 text-xs text-gray-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={feedSavedOnly}
+                        onChange={e => setFeedSavedOnly(e.target.checked)}
+                        className="rounded border-gray-300 text-[#5C5CFF] focus:ring-[#5C5CFF]"
+                      />
+                      <span>Saved Discussions only</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Status Filter */}
+                <div className="bg-white rounded-xl border border-gray-150 p-4 space-y-3 shadow-sm">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status</h4>
+                  <div className="flex rounded-lg border border-gray-200 overflow-hidden bg-gray-50 p-0.5 gap-0.5 text-xs">
+                    {(["All", "Resolved", "Unresolved"] as const).map(v => (
+                      <button
+                        key={v}
+                        onClick={() => setFeedResolvedFilter(v)}
+                        className={cn(
+                          "flex-1 py-1.5 rounded-md font-semibold transition-all",
+                          feedResolvedFilter === v ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-750"
+                        )}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Priority Filter */}
+                <div className="bg-white rounded-xl border border-gray-150 p-4 space-y-3 shadow-sm">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Priority</h4>
+                  <select
+                    value={feedPriorityFilter}
+                    onChange={e => setFeedPriorityFilter(e.target.value)}
+                    className="w-full text-xs bg-white border border-gray-200 rounded-lg p-2.5 font-medium outline-none"
+                  >
+                    <option value="All">All Priorities</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+
+                {/* Department Filter */}
+                <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Department</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {depts.map(d => (
+                      <button
+                        key={d}
+                        onClick={() => setFeedDeptFilter(d)}
+                        className={cn(
+                          "px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all",
+                          feedDeptFilter === d ? "border-[#5C5CFF] bg-[#EEF2FF] text-[#5C5CFF]" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                        )}
+                      >
+                        {d === "All" ? "All Departments" : d}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Drawer>
+
+            {/* Create Discussion Modal */}
+            {activeModal === "new-discussion" && (
+              <Modal
+                title="New Discussion"
+                onClose={handleCloseModal}
+              >
+                <div className="space-y-4 text-left">
+                  <div className="relative">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">What would you like to discuss?</label>
+                    <textarea
+                      rows={4}
+                      value={newDiscText}
+                      onChange={e => setNewDiscText(e.target.value)}
+                      placeholder="Type your message... use @ to mention teammates"
+                      className="w-full text-xs border border-gray-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-[#5C5CFF] resize-none"
+                    />
+                    {/* Mention autocomplete box for post composition */}
+                    <MentionPopup
+                      text={newDiscText}
+                      setText={setNewDiscText}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Audience / Department</label>
+                      <select
+                        value={newDiscDept}
+                        onChange={e => setNewDiscDept(e.target.value)}
+                        className="w-full text-xs bg-white border border-gray-200 rounded-lg p-2 font-medium outline-none"
+                      >
+                        {depts.map(d => <option key={d} value={d}>{d === "All" ? "All Departments" : d}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Priority Badge <span className="text-gray-450 font-normal">(optional)</span></label>
+                      <select
+                        value={newDiscPriority}
+                        onChange={e => setNewDiscPriority(e.target.value as any)}
+                        className="w-full text-xs bg-white border border-gray-200 rounded-lg p-2 font-medium outline-none"
+                      >
+                        <option value="None">None</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Simulated Attachments UI */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Attachments</label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setNewDiscAttachments(prev => [...prev, { name: `Image_${Date.now().toString().slice(-4)}.jpg`, type: "image", size: "1.4 MB" }]);
+                          }}
+                          className="text-[10px] text-[#5C5CFF] font-bold hover:underline flex items-center gap-1"
+                        >
+                          <Paperclip size={10} /> Add Image
+                        </button>
+                        <button
+                          onClick={() => {
+                            setNewDiscAttachments(prev => [...prev, { name: `Doc_${Date.now().toString().slice(-4)}.pdf`, type: "file", size: "0.8 MB" }]);
+                          }}
+                          className="text-[10px] text-[#5C5CFF] font-bold hover:underline flex items-center gap-1"
+                        >
+                          <Paperclip size={10} /> Add File
+                        </button>
+                      </div>
+                    </div>
+                    {newDiscAttachments.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {newDiscAttachments.map((att, i) => (
+                          <div key={i} className="flex items-center gap-1.5 bg-gray-55 border border-gray-200 rounded-lg p-1.5 text-[10px] text-gray-700">
+                            <FileText size={10} className="text-gray-455" />
+                            <span className="truncate max-w-[120px]">{att.name}</span>
+                            <span className="text-gray-400">({att.size})</span>
+                            <button onClick={() => setNewDiscAttachments(prev => prev.filter((_, idx) => idx !== i))} className="text-red-500 hover:text-red-700 ml-1"><X size={10} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                    <Btn
+                      variant="outline"
+                      onClick={handleCloseModal}
+                    >
+                      Cancel
+                    </Btn>
+                    <Btn
+                      variant="primary"
+                      disabled={!newDiscText.trim()}
+                      onClick={() => {
+                        handleCreatePost(newDiscText, newDiscPriority, newDiscDept, newDiscAttachments);
+                        handleCloseModal();
+                        setNewDiscText("");
+                        setNewDiscPriority("None");
+                        setNewDiscDept("All");
+                        setNewDiscAttachments([]);
+                      }}
+                    >
+                      Create Discussion
+                    </Btn>
+                  </div>
+                </div>
+              </Modal>
+            )}
+
+            {/* Edit Discussion Modal */}
+            {activeModal === "edit-discussion" && editingPost && (
+              <Modal
+                title="Edit Discussion"
+                onClose={handleCloseModal}
+              >
+                <div className="space-y-4 text-left">
+                  <div className="relative">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">Edit Message</label>
+                    <textarea
+                      rows={4}
+                      value={editingPost.text}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setEditingPost(prev => prev ? { ...prev, text: val } : null);
+                      }}
+                      className="w-full text-xs border border-gray-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-[#5C5CFF] resize-none"
+                    />
+                    <MentionPopup
+                      text={editingPost.text}
+                      setText={(t) => setEditingPost(prev => prev ? { ...prev, text: t } : null)}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Priority Badge</label>
+                      <select
+                        value={editingPost.priority || "None"}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setEditingPost(prev => prev ? { ...prev, priority: val === "None" ? undefined : val as any } : null);
+                        }}
+                        className="w-full text-xs bg-white border border-gray-200 rounded-lg p-2 font-medium outline-none"
+                      >
+                        <option value="None">None</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Simulated Attachments UI for Edit */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Attachments</label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            const currentAtts = editingPost.attachments || [];
+                            setEditingPost(prev => prev ? { ...prev, attachments: [...currentAtts, { name: `Image_${Date.now().toString().slice(-4)}.jpg`, type: "image", size: "1.4 MB" }] } : null);
+                          }}
+                          className="text-[10px] text-[#5C5CFF] font-bold hover:underline flex items-center gap-1"
+                        >
+                          <Paperclip size={10} /> Add Image
+                        </button>
+                        <button
+                          onClick={() => {
+                            const currentAtts = editingPost.attachments || [];
+                            setEditingPost(prev => prev ? { ...prev, attachments: [...currentAtts, { name: `Doc_${Date.now().toString().slice(-4)}.pdf`, type: "file", size: "0.8 MB" }] } : null);
+                          }}
+                          className="text-[10px] text-[#5C5CFF] font-bold hover:underline flex items-center gap-1"
+                        >
+                          <Paperclip size={10} /> Add File
+                        </button>
+                      </div>
+                    </div>
+                    {(editingPost.attachments || []).length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {(editingPost.attachments || []).map((att, i) => (
+                          <div key={i} className="flex items-center gap-1.5 bg-gray-55 border border-gray-200 rounded-lg p-1.5 text-[10px] text-gray-700">
+                            <FileText size={10} className="text-gray-455" />
+                            <span className="truncate max-w-[120px]">{att.name}</span>
+                            <span className="text-gray-400">({att.size})</span>
+                            <button
+                              onClick={() => {
+                                const currentAtts = editingPost.attachments || [];
+                                setEditingPost(prev => prev ? { ...prev, attachments: currentAtts.filter((_, idx) => idx !== i) } : null);
+                              }}
+                              className="text-red-500 hover:text-red-700 ml-1"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                    <Btn variant="outline" onClick={handleCloseModal}>Cancel</Btn>
+                    <Btn
+                      variant="primary"
+                      disabled={!editingPost.text.trim()}
+                      onClick={() => {
+                        handleEditPost(editingPost.id, editingPost.text, editingPost.priority || "None", editingPost.attachments || []);
+                        handleCloseModal();
+                      }}
+                    >
+                      Save Changes
+                    </Btn>
+                  </div>
+                </div>
+              </Modal>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {activeModal === "delete-discussion" && confirmDeleteId && (
+              <Modal
+                title="Delete discussion?"
+                onClose={handleCloseModal}
+                width="max-w-[520px]"
+              >
+                <div className="space-y-4 text-left">
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    Are you sure you want to delete this discussion? All comments and replies will also be permanently deleted. This action cannot be undone.
+                  </p>
+                  <div className="flex justify-end gap-3 pt-2">
+                    <Btn variant="outline" disabled={isDeleting} onClick={handleCloseModal}>Cancel</Btn>
+                    <Btn
+                      disabled={isDeleting}
+                      className="bg-red-600 hover:bg-red-700 text-white border-transparent"
+                      onClick={() => {
+                        setIsDeleting(true);
+                        setTimeout(() => {
+                          handleDeletePost(confirmDeleteId);
+                          triggerFeedToast("Discussion deleted");
+                          handleCloseModal();
+                        }, 800);
+                      }}
+                    >
+                      {isDeleting ? "Deleting..." : "Delete"}
+                    </Btn>
+                  </div>
+                </div>
+              </Modal>
+            )}
+
+            {/* Feed dynamic toast */}
+            {feedToast && (
+              <div className="fixed bottom-6 right-6 z-[150] flex items-center gap-2.5 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium">
+                <CheckCircle size={15} className="text-green-400" />
+                <span>{feedToast}</span>
+              </div>
+            )}
           </div>
         )}
 
         {/* ── ANNOUNCEMENTS TAB ── */}
-        {tab==="Announcements"&&!teamAnnDetailId&&(
-          <div className="flex flex-col h-full">
+        {tab==="Announcements"&&(
+          <div className="flex flex-col h-full w-full">
             <div className="flex-1 overflow-auto">
               <div className="max-w-4xl mx-auto px-6 py-5 space-y-5 text-left">
                 {showCreateAnnouncement && (
@@ -1876,24 +2237,46 @@ function TeamPage({
                 </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* ── ANNOUNCEMENT DETAIL VIEW ── */}
-        {tab==="Announcements"&&teamAnnDetailId&&teamAnnDetail&&(
-          <div className="flex flex-col h-full bg-[#F7F8FA] overflow-auto p-6">
-            <div className="max-w-2xl mx-auto space-y-4 w-full text-left">
-              <button onClick={()=>setTeamAnnDetailId(null)} className="flex items-center gap-1 text-xs text-[#5C5CFF] hover:underline mb-2">
-                <ChevronLeft size={13}/>Back to Announcements
-              </button>
-              <div className="bg-white border border-gray-200 rounded-xl p-5">
-                <h1 className="text-base font-bold text-gray-900">{teamAnnDetail.title}</h1>
-                <p className="text-xs text-gray-400 mt-1">By {teamAnnDetail.author} · {teamAnnDetail.time}</p>
-                <div className="text-sm text-gray-700 mt-4 whitespace-pre-line leading-relaxed">
-                  {teamAnnDetail.body}
+            {/* Contextual Overlay Drawer for Announcement Details */}
+            <Drawer
+              isOpen={!!teamAnnDetailId}
+              onClose={() => setTeamAnnDetailId(null)}
+              title={teamAnnDetail?.title || "Announcement"}
+              avatar={
+                teamAnnDetail ? (
+                  <Avt initials={teamAnnDetail.author.split(" ").map(n=>n[0]).join("")} color="#5C5CFF" size="sm"/>
+                ) : null
+              }
+              headerAddon={
+                teamAnnDetail ? (
+                  <span className="text-[10px] font-semibold bg-[#EEF2FF] text-[#5C5CFF] px-1.5 py-0.5 rounded uppercase">{teamAnnDetail.category}</span>
+                ) : null
+              }
+              footer={
+                <Btn variant="outline" onClick={() => setTeamAnnDetailId(null)}>Close Details</Btn>
+              }
+            >
+              {teamAnnDetail && (
+                <div className="space-y-6 text-left">
+                  <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between text-xs text-gray-400 pb-3 border-b border-gray-100">
+                      <div>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Published By</p>
+                        <p className="text-xs font-semibold text-gray-800 mt-1">{teamAnnDetail.author} ({teamAnnDetail.dept})</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Date</p>
+                        <p className="text-xs font-semibold text-gray-855 mt-1">{teamAnnDetail.time}</p>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line font-medium">
+                      {teamAnnDetail.body}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              )}
+            </Drawer>
           </div>
         )}
 
@@ -2061,8 +2444,8 @@ function TeamPage({
 
         {/* ── APPROVALS TAB ── */}
         {tab==="Approvals"&&(
-          <div className="flex h-full overflow-hidden">
-            <div className={cn("flex flex-col",tApprovalDetailId?"w-[52%] flex-shrink-0 border-r border-gray-200":"flex-1")}>
+          <div className="flex h-full overflow-hidden w-full">
+            <div className="flex-1 flex flex-col">
               <div className="flex-1 overflow-auto p-5">
                 <div className="bg-white rounded-xl border border-gray-200">
                   <table className="w-full text-sm text-left">
@@ -2073,7 +2456,7 @@ function TeamPage({
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {teamReqs.map(r=>(
-                        <tr key={r.id} onClick={()=>setTApprovalDetailId(tApprovalDetailId===r.id?null:r.id)} className={cn("cursor-pointer hover:bg-gray-50 transition-colors",tApprovalDetailId===r.id&&"bg-[#EEF2FF]")}>
+                        <tr key={r.id} onClick={()=>setTApprovalDetailId(r.id)} className={cn("cursor-pointer hover:bg-gray-50 transition-colors",tApprovalDetailId===r.id&&"bg-[#EEF2FF]")}>
                           <td className="px-4 py-3"><div className="flex items-center gap-2.5"><Avt initials={r.employee.split(" ").map(n=>n[0]).join("")} color={EMP_COLORS[parseInt(r.id.slice(-1))%EMP_COLORS.length]} size="sm"/><span className="font-medium text-gray-800 text-xs">{r.employee}</span></div></td>
                           <td className="px-4 py-3 text-gray-600 text-xs">{r.type}</td>
                           <td className="px-4 py-3 text-gray-500 text-xs max-w-[180px] truncate">{fmtDate(r.from)} – {fmtDate(r.to)} · {r.days}d</td>
@@ -2094,35 +2477,165 @@ function TeamPage({
                 </div>
               </div>
             </div>
-            {/* Detail Panel */}
-            {tApprovalDetailId&&(()=>{
-              const req=teamReqs.find(r=>r.id===tApprovalDetailId);
-              if(!req) return null;
-              return (
-                <div className="flex-1 flex flex-col overflow-hidden bg-white">
-                  <div className="px-5 py-3.5 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-                    <div className="flex items-center gap-2.5 text-left">
-                      <Avt initials={req.employee.split(" ").map(n=>n[0]).join("")} color={EMP_COLORS[parseInt(req.id.slice(-1))%EMP_COLORS.length]} size="sm"/>
-                      <div><p className="text-sm font-semibold text-gray-900">{req.employee}</p><p className="text-xs text-gray-400">{req.type} Request</p></div>
-                    </div>
-                    <div className="flex items-center gap-2"><StatusBadge status={req.status}/><button onClick={()=>setTApprovalDetailId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X size={14}/></button></div>
-                  </div>
-                  <div className="flex-1 overflow-auto p-5 space-y-4 text-left">
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {([["Employee",req.employee],["Department","Engineering"],["Leave Type",req.type],["Date Range",`${fmtDate(req.from)} – ${fmtDate(req.to)}`],["Days",req.days+" days"],["Applied",fmtDate(req.applied)]] as [string,string][]).map(([k,v])=>(
-                        <div key={k} className="bg-gray-50 rounded-lg p-3"><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{k}</p><p className="text-xs font-semibold text-gray-800">{v}</p></div>
-                      ))}
-                    </div>
-                    {req.status==="Pending"&&(
-                      <div className="flex gap-3">
-                        <Btn onClick={()=>{setTApprovalDetailId(null);approveT(req.id);}} className="flex-1 bg-green-600 hover:bg-green-700 justify-center"><Check size={13}/>Approve</Btn>
-                        <Btn onClick={()=>{setTApprovalDetailId(null);rejectT(req.id);}} variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50 justify-center"><X size={13}/>Reject</Btn>
+            {/* Drawer Detail Panel */}
+            <Drawer
+              isOpen={!!tApprovalDetailId}
+              onClose={() => setTApprovalDetailId(null)}
+              title={
+                (() => {
+                  const req = teamReqs.find(r => r.id === tApprovalDetailId);
+                  return req ? req.employee : "Approval Details";
+                })()
+              }
+              headerAddon={
+                (() => {
+                  const req = teamReqs.find(r => r.id === tApprovalDetailId);
+                  return req ? <StatusBadge status={req.status} /> : null;
+                })()
+              }
+              avatar={
+                (() => {
+                  const req = teamReqs.find(r => r.id === tApprovalDetailId);
+                  if (!req) return null;
+                  return (
+                    <Avt
+                      initials={req.employee.split(" ").map(n => n[0]).join("")}
+                      color={EMP_COLORS[parseInt(req.id.slice(-1)) % EMP_COLORS.length]}
+                      size="md"
+                    />
+                  );
+                })()
+              }
+              footer={
+                (() => {
+                  const req = teamReqs.find(r => r.id === tApprovalDetailId);
+                  if (!req || req.status !== "Pending") return null;
+                  return (
+                    <>
+                      <Btn
+                        variant="outline"
+                        className="border-red-200 text-red-650 hover:bg-red-50"
+                        onClick={() => {
+                          rejectT(req.id);
+                          setTApprovalDetailId(null);
+                        }}
+                      >
+                        <X size={14} />
+                        Reject Request
+                      </Btn>
+                      <Btn
+                        variant="primary"
+                        className="bg-green-600 hover:bg-green-700 focus:ring-green-500"
+                        onClick={() => {
+                          approveT(req.id);
+                          setTApprovalDetailId(null);
+                        }}
+                      >
+                        <Check size={14} />
+                        Approve Request
+                      </Btn>
+                    </>
+                  );
+                })()
+              }
+            >
+              {(() => {
+                const req = teamReqs.find(r => r.id === tApprovalDetailId);
+                if (!req) return null;
+
+                const reason = req.reason || "Scheduled family vacation. Handover completed to the team lead.";
+                const leaveBalance = [
+                  { type: "Annual Leave", total: 18, used: 12, color: "bg-indigo-500" },
+                  { type: "Sick Leave", total: 10, used: 2, color: "bg-red-500" },
+                  { type: "Casual Leave", total: 6, used: 3, color: "bg-amber-500" },
+                ];
+
+                return (
+                  <div className="space-y-6 text-left">
+                    {/* Key Info Cards */}
+                    <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-4">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Request Details</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Leave Type</p>
+                          <p className="text-xs font-semibold text-gray-850 mt-1">{req.type}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Department</p>
+                          <p className="text-xs font-semibold text-gray-850 mt-1">Engineering</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Duration</p>
+                          <p className="text-xs font-semibold text-gray-855 mt-1">{req.days} days ({fmtDate(req.from)} – {fmtDate(req.to)})</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Applied On</p>
+                          <p className="text-xs font-semibold text-gray-855 mt-1">{fmtDate(req.applied)}</p>
+                        </div>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Reason */}
+                    <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-2">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Reason</h4>
+                      <p className="text-xs text-gray-750 leading-relaxed font-medium">{reason}</p>
+                    </div>
+
+                    {/* Leave Balance */}
+                    <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-3.5">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Leave Balance</h4>
+                      <div className="space-y-2.5">
+                        {leaveBalance.map(b => (
+                          <div key={b.type} className="text-xs">
+                            <div className="flex justify-between font-semibold text-gray-700 mb-1">
+                              <span>{b.type}</span>
+                              <span>{b.total - b.used} / {b.total} Days Left</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                              <div className={cn("h-full rounded-full", b.color)} style={{ width: `${((b.total - b.used)/b.total)*100}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Attachments */}
+                    <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-3">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Attachments</h4>
+                      <div className="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100/70 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-red-50 text-red-500 rounded flex items-center justify-center font-bold text-xs">PDF</div>
+                          <div className="text-left">
+                            <p className="text-xs font-bold text-gray-800">flight_tickets.pdf</p>
+                            <p className="text-[10px] text-gray-400">1.2 MB · Document</p>
+                          </div>
+                        </div>
+                        <ArrowDownRight className="text-gray-405 hover:text-gray-600" size={14} />
+                      </div>
+                    </div>
+
+                    {/* Approver Timeline / History */}
+                    <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-3">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Approval History</h4>
+                      <div className="relative border-l-2 border-gray-100 pl-4 ml-1 space-y-4 text-xs">
+                        <div className="relative">
+                          <span className="absolute -left-[21px] top-0.5 w-2.5 h-2.5 rounded-full bg-green-500 ring-4 ring-white" />
+                          <p className="font-bold text-gray-800">Request Submitted</p>
+                          <p className="text-[10px] text-gray-405 mt-0.5">{fmtDate(req.applied)} · System</p>
+                        </div>
+                        <div className="relative">
+                          <span className={cn("absolute -left-[21px] top-0.5 w-2.5 h-2.5 rounded-full ring-4 ring-white", req.status === "Pending" ? "bg-amber-400" : req.status === "Approved" ? "bg-green-500" : "bg-red-500")} />
+                          <p className="font-bold text-gray-800">Manager Review</p>
+                          <p className="text-[10px] text-gray-405 mt-0.5">
+                            {req.status === "Pending" ? "Awaiting review from Alex Admin (Manager)" : req.status === "Approved" ? "Approved by Alex Admin (Manager)" : "Rejected by Alex Admin (Manager)"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
+            </Drawer>
           </div>
         )}
 
@@ -2235,40 +2748,72 @@ function TeamPage({
 
       </div>
 
-      {/* ── TeamPage: Task Detail Modal ── */}
-      {selectedTeamTask && (
-        <Modal title="Task Details" onClose={() => setSelectedTeamTask(null)}>
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-150">
-              <div className="w-10 h-10 rounded-full bg-[#5B57E8] text-white text-sm font-semibold flex items-center justify-center">AA</div>
-              <div className="text-left">
-                <h4 className="text-sm font-bold text-gray-900">{selectedTeamTask.title}</h4>
-                <p className="text-xs text-gray-500">Created by Manager Alex Admin</p>
+      {/* ── TeamPage: Task Detail Drawer ── */}
+      <Drawer
+        isOpen={!!selectedTeamTask}
+        onClose={() => setSelectedTeamTask(null)}
+        title={selectedTeamTask?.title || "Task Details"}
+        avatar={
+          <div className="w-10 h-10 rounded-full bg-[#5B57E8] text-white text-sm font-semibold flex items-center justify-center">
+            AA
+          </div>
+        }
+        headerAddon={
+          selectedTeamTask ? (
+            <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full",
+              selectedTeamTask.status === "Done" ? "bg-green-50 text-green-600" : selectedTeamTask.status === "Overdue" ? "bg-red-50 text-red-500" : selectedTeamTask.status === "In Progress" ? "bg-blue-50 text-blue-600" : "bg-gray-100 text-gray-500"
+            )}>
+              {selectedTeamTask.status}
+            </span>
+          ) : null
+        }
+        footer={
+          <Btn variant="outline" onClick={() => setSelectedTeamTask(null)}>Close Details</Btn>
+        }
+      >
+        {selectedTeamTask && (
+          <div className="space-y-6 text-left">
+            <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-4">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Task Assignment</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Assigned To</p>
+                  <p className="text-xs font-semibold text-gray-800 mt-1">{selectedTeamTask.assignee}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Department</p>
+                  <p className="text-xs font-semibold text-gray-850 mt-1">{selectedTeamTask.dept}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Due Date</p>
+                  <p className="text-xs font-semibold text-gray-855 mt-1">{selectedTeamTask.due}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Priority</p>
+                  <p className="text-xs font-semibold text-gray-855 mt-1">
+                    <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                      selectedTeamTask.priority === "High" ? "bg-red-50 text-red-500" : selectedTeamTask.priority === "Medium" ? "bg-amber-50 text-amber-500" : "bg-gray-100 text-gray-400"
+                    )}>
+                      {selectedTeamTask.priority}
+                    </span>
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 text-left">
-              {[
-                ["Assigned To", selectedTeamTask.assignee],
-                ["Due Date", selectedTeamTask.due],
-                ["Priority", selectedTeamTask.priority],
-                ["Status", selectedTeamTask.status]
-              ].map(([k, v]) => (
-                <div key={k} className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{k}</p>
-                  <p className="text-sm font-semibold text-gray-800">{v}</p>
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-              <Btn variant="outline" onClick={() => setSelectedTeamTask(null)}>Close</Btn>
+
+            <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-2">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Description</h4>
+              <p className="text-xs text-gray-700 leading-relaxed font-medium">
+                Please complete the reviews and log the results in the system. Follow the standard guidelines for evaluations.
+              </p>
             </div>
           </div>
-        </Modal>
-      )}
+        )}
+      </Drawer>
 
       {/* ── TeamPage: Assign Task Modal ── */}
-      {showAssignTask && (
-        <Modal title="Assign Task" onClose={() => setShowAssignTask(false)}>
+      {activeModal === "assign-task" && (
+        <Modal title="Assign Task" onClose={() => { setShowAssignTask(false); handleCloseModal(); }}>
           <div className="space-y-3">
             <InputField label="Task Title" placeholder="e.g. Complete Q3 Performance Review…"/>
             <div className="grid grid-cols-2 gap-3">
@@ -2280,16 +2825,16 @@ function TeamPage({
               <SelectField label="Linked To"><option>None</option><option>Q3 Review</option><option>Onboarding</option></SelectField>
             </div>
             <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-              <Btn variant="outline" onClick={() => setShowAssignTask(false)}>Cancel</Btn>
-              <Btn onClick={() => setShowAssignTask(false)}><Plus size={13}/>Assign Task</Btn>
+              <Btn variant="outline" onClick={() => { setShowAssignTask(false); handleCloseModal(); }}>Cancel</Btn>
+              <Btn onClick={() => { setShowAssignTask(false); handleCloseModal(); }}><Plus size={13}/>Assign Task</Btn>
             </div>
           </div>
         </Modal>
       )}
 
       {/* ── TeamPage: Assign Shift Modal ── */}
-      {showAssignShift && selectedEmp && (
-        <Modal title={`Assign Shift · ${selectedEmp.name}`} onClose={()=>setShowAssignShift(false)} width="max-w-md">
+      {activeModal === "assign-shift" && selectedEmp && (
+        <Modal title={`Assign Shift · ${selectedEmp.name}`} onClose={() => { setShowAssignShift(false); handleCloseModal(); }} width="max-w-md">
           <div className="space-y-3">
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
               <Avt initials={selectedEmp.initials} color={selectedEmp.color} size="sm"/>
@@ -2299,18 +2844,18 @@ function TeamPage({
               <option>Morning (6AM–2PM)</option><option>General (9AM–6PM)</option><option>Evening (2PM–10PM)</option><option>Night (10PM–6AM)</option><option>Flexible</option>
             </SelectField>
             <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-              <Btn variant="outline" onClick={()=>setShowAssignShift(false)}>Cancel</Btn>
-              <Btn onClick={()=>setShowAssignShift(false)}><Clock size={13}/>Save Shift</Btn>
+              <Btn variant="outline" onClick={() => { setShowAssignShift(false); handleCloseModal(); }}>Cancel</Btn>
+              <Btn onClick={() => { setShowAssignShift(false); handleCloseModal(); }}><Clock size={13}/>Save Shift</Btn>
             </div>
           </div>
         </Modal>
       )}
 
       {/* ── TeamPage: Approve Leave Modal ── */}
-      {tApproveId&&(()=> {
+      {activeModal === "approve-leave" && tApproveId && (() => {
         const req = teamReqs.find(r => r.id === tApproveId);
         return req ? (
-          <Modal title="Approve Leave" onClose={() => setTApproveId(null)}>
+          <Modal title="Approve Leave" onClose={() => { setTApproveId(null); handleCloseModal(); }}>
             <div className="space-y-4 text-left">
               <div className="bg-green-50 border border-green-100 rounded-xl p-4 flex items-start gap-3">
                 <CheckCircle size={18} className="text-green-500 flex-shrink-0 mt-0.5"/>
@@ -2318,11 +2863,11 @@ function TeamPage({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {([["Employee",req.employee],["Leave Type",req.type],["Date Range",`${fmtDate(req.from)} – ${fmtDate(req.to)}`],["Total Days",req.days+" days"]] as [string,string][]).map(([k,v])=>(
-                  <div key={k} className="bg-gray-50 rounded-lg p-3"><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{k}</p><p className="text-sm font-semibold text-gray-800">{v}</p></div>
+                  <div key={k} className="bg-gray-55 rounded-lg p-3"><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{k}</p><p className="text-sm font-semibold text-gray-800">{v}</p></div>
                 ))}
               </div>
               <div className="flex justify-end gap-3 pt-2 border-t border-gray-200">
-                <Btn variant="outline" onClick={() => setTApproveId(null)}>Cancel</Btn>
+                <Btn variant="outline" onClick={() => { setTApproveId(null); handleCloseModal(); }}>Cancel</Btn>
                 <Btn onClick={confirmApproveT} className="bg-green-600 hover:bg-green-700"><Check size={13}/>Approve</Btn>
               </div>
             </div>
@@ -2331,18 +2876,18 @@ function TeamPage({
       })()}
 
       {/* ── TeamPage: Reject Leave Modal ── */}
-      {tRejectId&&(() => {
+      {activeModal === "reject-leave" && tRejectId && (() => {
         const req = teamReqs.find(r => r.id === tRejectId);
         return req ? (
-          <Modal title="Reject Leave Request" onClose={() => setTRejectId(null)}>
+          <Modal title="Reject Leave Request" onClose={() => { setTRejectId(null); handleCloseModal(); }}>
             <div className="space-y-4 text-left">
               <div className="grid grid-cols-2 gap-3">
                 {([["Employee",req.employee],["Type",req.type],["Period",`${fmtDate(req.from)} – ${fmtDate(req.to)}`],["Days",req.days+" days"]] as [string,string][]).map(([k,v])=>(
-                  <div key={k} className="bg-gray-50 rounded-lg p-3"><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{k}</p><p className="text-sm font-semibold text-gray-800">{v}</p></div>
+                  <div key={k} className="bg-gray-55 rounded-lg p-3"><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{k}</p><p className="text-sm font-semibold text-gray-800">{v}</p></div>
                 ))}
               </div>
               <div className="flex justify-end gap-3 pt-2 border-t border-gray-200">
-                <Btn variant="outline" onClick={() => setTRejectId(null)}>Cancel</Btn>
+                <Btn variant="outline" onClick={() => { setTRejectId(null); handleCloseModal(); }}>Cancel</Btn>
                 <Btn onClick={confirmRejectT} className="bg-red-600 hover:bg-red-700"><X size={13}/>Reject Leave</Btn>
               </div>
             </div>
@@ -2351,35 +2896,35 @@ function TeamPage({
       })()}
 
       {/* ── TeamPage: Email Modal ── */}
-      {showEmailModal&&selectedEmp&&(
-        <Modal title={`Email · ${selectedEmp.name}`} onClose={()=>setShowEmailModal(false)} width="max-w-xl">
+      {activeModal === "email" && selectedEmp && (
+        <Modal title={`Email · ${selectedEmp.name}`} onClose={() => { setShowEmailModal(false); handleCloseModal(); }} width="max-w-xl">
           <div className="space-y-3 text-left">
             <InputField label="Subject" value={emailSubject} onChange={e=>setEmailSubject(e.target.value)} placeholder="Subject…"/>
             <div className="flex flex-col gap-1"><label className="text-xs font-semibold text-gray-500">Message</label><textarea rows={6} value={emailBody} onChange={e=>setEmailBody(e.target.value)} placeholder="Write your message…" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]"/></div>
             <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-              <Btn variant="outline" onClick={()=>setShowEmailModal(false)}>Cancel</Btn>
-              <Btn onClick={()=>setShowEmailModal(false)}><Send size={13}/>Send Email</Btn>
+              <Btn variant="outline" onClick={() => { setShowEmailModal(false); handleCloseModal(); }}>Cancel</Btn>
+              <Btn onClick={() => { setShowEmailModal(false); handleCloseModal(); }}><Send size={13}/>Send Email</Btn>
             </div>
           </div>
         </Modal>
       )}
 
       {/* ── TeamPage: Call Modal ── */}
-      {showCallModal&&selectedEmp&&(
-        <Modal title="Contact Details" onClose={()=>setShowCallModal(false)} width="max-w-sm">
+      {activeModal === "call" && selectedEmp && (
+        <Modal title="Contact Details" onClose={() => { setShowCallModal(false); handleCloseModal(); }} width="max-w-sm">
           <div className="space-y-3 text-left">
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
               <Avt initials={selectedEmp.initials} color={selectedEmp.color} size="md"/>
               <div><p className="font-semibold text-gray-900">{selectedEmp.name}</p><p className="text-xs text-gray-500">{selectedEmp.designation}</p></div>
             </div>
-            <Btn className="w-full justify-center" onClick={()=>setShowCallModal(false)}><Phone size={13}/>Call Now</Btn>
+            <Btn className="w-full justify-center" onClick={() => { setShowCallModal(false); handleCloseModal(); }}><Phone size={13}/>Call Now</Btn>
           </div>
         </Modal>
       )}
 
       {/* ── TeamPage: Filters Modal ── */}
-      {showTeamFilter && (
-        <Modal title="Filter Members & Reportees" onClose={() => setShowTeamFilter(false)} width="max-w-md">
+      {activeModal === "filter-members" && (
+        <Modal title="Filter Members & Reportees" onClose={() => { setShowTeamFilter(false); handleCloseModal(); }} width="max-w-md">
           <div className="space-y-4 text-left">
             <SelectField
               label="Department"
@@ -2412,8 +2957,9 @@ function TeamPage({
                 setDesigFilter("All");
                 setStatusFilter("All");
                 setShowTeamFilter(false);
+                handleCloseModal();
               }}>Reset</Btn>
-              <Btn size="sm" onClick={() => setShowTeamFilter(false)}>Apply Filters</Btn>
+              <Btn size="sm" onClick={() => { setShowTeamFilter(false); handleCloseModal(); }}>Apply Filters</Btn>
             </div>
           </div>
         </Modal>
@@ -2906,7 +3452,32 @@ function EmployeeProfilePage({ employee, navigate, origin }: { employee:Employee
                 <h4 className="text-sm font-semibold text-gray-800 mb-3">Quick Actions</h4>
                 <div className="space-y-2">
                   {([{icon:Edit,label:"Edit Employee"},{icon:ClipboardList,label:"Assign Task"},{icon:Clock,label:"Assign Shift"},{icon:MessageCircle,label:"Send Message"},{icon:BarChart2,label:"View Attendance"},{icon:CalendarDays,label:"View Leave History"},{icon:Download,label:"Download Profile"},{icon:UserX,label:"Deactivate Employee",danger:true}] as {icon:React.ElementType,label:string,danger?:boolean}[]).map(({icon:Icon,label,danger})=>(
-                    <button key={label} className={cn("w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg border border-gray-200 text-left transition-colors",danger?"text-red-600 hover:bg-red-50 border-red-100":"text-gray-600 hover:bg-gray-50")}><Icon size={14} className={danger?"text-red-500":"text-[#5C5CFF]"}/>{label}</button>
+                    <button
+                      key={label}
+                      onClick={() => {
+                        if (label === "Assign Task") {
+                          alert(`Assign Task for ${employee.name} is handled in the Tasks module.`);
+                        } else if (label === "Assign Shift") {
+                          alert(`Assign Shift for ${employee.name} is handled in the Shift Planner.`);
+                        } else if (label === "Send Message") {
+                          alert(`Sending messages to ${employee.name} is handled in Team Feed.`);
+                        } else if (label === "View Attendance") {
+                          setTab("Attendance");
+                        } else if (label === "View Leave History") {
+                          setTab("Leave");
+                        } else if (label === "Download Profile") {
+                          alert(`Downloading profile for ${employee.name}...`);
+                        } else if (label === "Edit Employee") {
+                          setShowEdit(true);
+                        } else if (label === "Deactivate Employee") {
+                          alert(`Deactivating employee ${employee.name}...`);
+                        }
+                      }}
+                      className={cn("w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg border border-gray-200 text-left transition-colors",danger?"text-red-600 hover:bg-red-50 border-red-100":"text-gray-600 hover:bg-gray-50")}
+                    >
+                      <Icon size={14} className={danger?"text-red-500":"text-[#5C5CFF]"}/>
+                      {label}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -3239,243 +3810,8 @@ function AddEmployeePage({ navigate }: { navigate:(p:AppPage)=>void }) {
 }
 
 // ── Documents Page ─────────────────────────────────────────────────────────────
-function DocumentsPage({ navigate }: { navigate:(p:AppPage)=>void }) {
-  const [docCat, setDocCat] = useState("All");
-  const [showUpload, setShowUpload] = useState(false);
-  return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="Documents" subtitle="Company policies, templates, and employee documents" breadcrumbs={[{label:"Home",onClick:()=>navigate("my-space")},{label:"Documents"}]}>
-        <Btn variant="outline" size="sm" onClick={()=>setShowUpload(true)}><Upload size={13}/>Upload</Btn>
-        <Btn size="sm" onClick={()=>setShowUpload(true)}><Plus size={13}/>New Document</Btn>
-      </PageHeader>
-      <div className="flex-1 overflow-auto p-6">
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <div className="flex gap-2">{["All","Policy","Template","Legal"].map(cat=><button key={cat} onClick={()=>setDocCat(cat)} className={cn("px-3 py-1.5 text-xs font-medium rounded-lg transition-colors",cat===docCat?"bg-[#5C5CFF] text-white":"text-gray-600 hover:bg-gray-100")}>{cat}</button>)}</div>
-            <div className="relative"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"/><input className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]" placeholder="Search…"/></div>
-          </div>
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50"><tr>{["Document","Category","Size","Updated By","Updated","Status","Actions"].map(h=><th key={h} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
-            <tbody className="divide-y divide-gray-100">
-              {DOCUMENTS_LIST.filter(d=>docCat==="All"||d.category===docCat).map(d=>(
-                <tr key={d.id} className="hover:bg-gray-50 group">
-                  <td className="px-5 py-3"><div className="flex items-center gap-2.5"><div className="w-8 h-8 rounded bg-red-50 flex items-center justify-center"><FileText size={14} className="text-red-500"/></div><span className="font-medium text-gray-800">{d.name}</span></div></td>
-                  <td className="px-5 py-3"><span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{d.category}</span></td>
-                  <td className="px-5 py-3 text-gray-500 text-xs">{d.size}</td>
-                  <td className="px-5 py-3 text-gray-600">{d.updatedBy}</td>
-                  <td className="px-5 py-3 text-gray-500 text-xs">{fmtDate(d.updated)}</td>
-                  <td className="px-5 py-3"><StatusBadge status={d.status}/></td>
-                  <td className="px-5 py-3"><div className="flex gap-1.5 opacity-0 group-hover:opacity-100"><button className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-[#5C5CFF]"><Eye size={13}/></button><button className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600"><Download size={13}/></button><button className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-red-500"><Trash2 size={13}/></button></div></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {showUpload&&(
-        <Modal title="Upload Document" onClose={()=>setShowUpload(false)}>
-          <div className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-[#5C5CFF] transition-colors cursor-pointer">
-              <Upload size={28} className="mx-auto text-gray-400 mb-3"/>
-              <p className="text-sm font-medium text-gray-700 mb-1">Drag & drop files here</p>
-              <p className="text-xs text-gray-400">PDF, DOCX, XLSX up to 25 MB</p>
-              <Btn variant="outline" size="sm" className="mt-4">Browse Files</Btn>
-            </div>
-            <SelectField label="Category" options={["Policy","Template","Legal","Other"]}/>
-            <InputField label="Document Name" placeholder="e.g. Employee Handbook 2025"/>
-            <SelectField label="Access Level" options={["All Employees","HR Only","Admins Only"]}/>
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-              <Btn variant="outline" onClick={()=>setShowUpload(false)}>Cancel</Btn>
-              <Btn onClick={()=>setShowUpload(false)}><Upload size={13}/>Upload</Btn>
-            </div>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
-}
 
 // ── Settings Page (trimmed) ────────────────────────────────────────────────────
-function SettingsPage({ navigate }: { navigate:(p:AppPage)=>void }) {
-  const [section, setSection] = useState("General");
-  const [settingsToast, setSettingsToast] = useState(false);
-  const showSettingsToast = () => { setSettingsToast(true); setTimeout(()=>setSettingsToast(false),2000); };
-  const [privacyToggles, setPrivacyToggles] = useState([true,true,false,true]);
-  const togglePrivacy = (i:number) => setPrivacyToggles(p=>p.map((v,j)=>j===i?!v:v));
-  const [notifChannels, setNotifChannels] = useState([true,true,false,false]);
-  const toggleNotifChannel = (i:number) => setNotifChannels(p=>p.map((v,j)=>j===i?!v:v));
-  const [notifTopics, setNotifTopics] = useState([true,true,true,false,true]);
-  const toggleNotifTopic = (i:number) => setNotifTopics(p=>p.map((v,j)=>j===i?!v:v));
-  const [showSecurityPwd, setShowSecurityPwd] = useState(false);
-
-  // If Manage Account is active, render it full-screen
-  if (section==="Manage Account") {
-    return <ManageAccountPage onBack={()=>setSection("General")}/>;
-  }
-
-  const NAV = [
-    {id:"General",icon:Settings,label:"General"},
-    {id:"Appearance",icon:Eye,label:"Appearance"},
-    {id:"Notifications",icon:Bell,label:"Notifications"},
-    {id:"Security",icon:Shield,label:"Security"},
-    {id:"Integrations",icon:Globe,label:"Integrations"},
-    {id:"Manage Account",icon:Users,label:"Manage Account",admin:true},
-    {id:"About",icon:Info,label:"About"},
-  ];
-
-  return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="Settings" breadcrumbs={[{label:"Home",onClick:()=>navigate("my-space")},{label:"Settings"}]}/>
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-52 flex-shrink-0 border-r border-gray-200 bg-gray-50 overflow-auto py-3">
-          {NAV.map(n=>(
-            <button key={n.id} onClick={()=>setSection(n.id)} className={cn("w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium transition-colors",section===n.id?"bg-white text-[#5C5CFF] border-r-2 border-[#5C5CFF]":"text-gray-600 hover:bg-white hover:text-gray-800",n.admin&&"mt-4 first-of-type:mt-0")}>
-              <n.icon size={14} className={section===n.id?"text-[#5C5CFF]":"text-gray-400"}/>
-              {n.label}
-              {n.admin&&<span className="ml-auto text-[9px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded font-semibold">Admin</span>}
-            </button>
-          ))}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto p-6">
-
-          {section==="General"&&(
-            <div className="max-w-lg space-y-5">
-              <h2 className="text-base font-semibold text-gray-900">General Settings</h2>
-              <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-                <h4 className="text-sm font-semibold text-gray-800">Language & Region</h4>
-                <SelectField label="Language" options={["English (US)","English (UK)","French","German","Spanish","Arabic","Hindi"]}/>
-                <div className="grid grid-cols-2 gap-4">
-                  <SelectField label="Date Format" options={["MM/DD/YYYY","DD/MM/YYYY","YYYY-MM-DD"]}/>
-                  <SelectField label="Time Format" options={["12-hour (AM/PM)","24-hour"]}/>
-                </div>
-                <SelectField label="Timezone" options={["(UTC-8) Pacific Time","(UTC-5) Eastern Time","(UTC+0) UTC","(UTC+5:30) IST"]}/>
-                <div className="pt-1"><Btn size="sm" onClick={showSettingsToast}>Save Changes</Btn></div>
-              </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-                <h4 className="text-sm font-semibold text-gray-800">Privacy</h4>
-                {["Show my profile to team members","Show my attendance to my manager","Allow location tracking for WFH","Share analytics with organization"].map((label,i)=>(
-                  <div key={label} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <span className="text-sm text-gray-700">{label}</span>
-                    <button onClick={()=>togglePrivacy(i)} className={cn("w-10 h-5 rounded-full transition-colors flex-shrink-0 relative",privacyToggles[i]?"bg-[#5C5CFF]":"bg-gray-300")}><div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform",privacyToggles[i]?"left-5":"left-0.5")}/></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {section==="Appearance"&&(
-            <div className="max-w-sm space-y-5">
-              <h2 className="text-base font-semibold text-gray-900">Appearance</h2>
-              <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-                <h4 className="text-sm font-semibold text-gray-800">Theme</h4>
-                <div className="grid grid-cols-3 gap-3">
-                  {["Light","Dark","System"].map(t=>(
-                    <button key={t} className={cn("py-3 rounded-lg border text-xs font-medium transition-colors",t==="Light"?"border-[#5C5CFF] bg-[#EEF2FF] text-[#5C5CFF]":"border-gray-200 text-gray-600 hover:border-gray-300")}>{t}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-                <h4 className="text-sm font-semibold text-gray-800">Accent Color</h4>
-                <div className="flex gap-3">{["#5C5CFF","#22C55E","#F59E0B","#EF4444","#8B5CF6","#06B6D4"].map(c=><button key={c} className={cn("w-8 h-8 rounded-full border-2 transition-all",c==="#5C5CFF"?"border-gray-900 scale-110":"border-transparent hover:scale-105")} style={{backgroundColor:c}}/>)}</div>
-              </div>
-            </div>
-          )}
-
-          {section==="Notifications"&&(
-            <div className="max-w-lg space-y-5">
-              <h2 className="text-base font-semibold text-gray-900">Notifications</h2>
-              <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-                <h4 className="text-sm font-semibold text-gray-800 mb-1">Channels</h4>
-                {["Email Notifications","In-App Notifications","Push Notifications","SMS Alerts"].map((label,i)=>(
-                  <div key={label} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <span className="text-sm text-gray-700">{label}</span>
-                    <button onClick={()=>toggleNotifChannel(i)} className={cn("w-10 h-5 rounded-full transition-colors flex-shrink-0 relative",notifChannels[i]?"bg-[#5C5CFF]":"bg-gray-300")}><div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform",notifChannels[i]?"left-5":"left-0.5")}/></button>
-                  </div>
-                ))}
-              </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-                <h4 className="text-sm font-semibold text-gray-800 mb-1">Notify me about</h4>
-                {["Leave requests awaiting my approval","Attendance exceptions","New announcements","System updates","Team activities"].map((label,i)=>(
-                  <div key={label} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <span className="text-sm text-gray-700">{label}</span>
-                    <button onClick={()=>toggleNotifTopic(i)} className={cn("w-10 h-5 rounded-full transition-colors flex-shrink-0 relative",notifTopics[i]?"bg-[#5C5CFF]":"bg-gray-300")}><div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform",notifTopics[i]?"left-5":"left-0.5")}/></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {section==="Security"&&(
-            <div className="max-w-lg space-y-5">
-              <h2 className="text-base font-semibold text-gray-900">Security</h2>
-              <div className="space-y-3">
-                {[{label:"Two-Factor Authentication",desc:"Add an extra layer of security to your account",state:"Enabled",action:"Manage",onClick:()=>navigate("profile")},{label:"Active Sessions",desc:"2 devices currently signed in",state:"Active",action:"View All",onClick:()=>navigate("profile")},{label:"Login History",desc:"See recent sign-in activity and locations",state:"",action:"View",onClick:()=>navigate("profile")}].map(s=>(
-                  <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between">
-                    <div><h4 className="text-sm font-medium text-gray-800">{s.label}</h4><p className="text-xs text-gray-500 mt-0.5">{s.desc}</p></div>
-                    <div className="flex items-center gap-2">{s.state&&<span className="text-xs font-medium text-green-600">{s.state}</span>}<Btn variant="outline" size="sm" onClick={s.onClick}>{s.action}</Btn></div>
-                  </div>
-                ))}
-              </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-                <h4 className="text-sm font-semibold text-gray-800">Change Password</h4>
-                <InputField label="Current Password" type="password" placeholder="••••••••"/>
-                <InputField label="New Password" type="password" placeholder="••••••••" required/>
-                <InputField label="Confirm New Password" type="password" placeholder="••••••••" required/>
-                <Btn size="sm" onClick={showSettingsToast}>Update Password</Btn>
-              </div>
-            </div>
-          )}
-
-          {section==="Integrations"&&(
-            <div className="max-w-2xl space-y-5">
-              <h2 className="text-base font-semibold text-gray-900">Integrations</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  {name:"Google Workspace",desc:"Sync users and calendar events",connected:true,icon:"G"},
-                  {name:"Slack",desc:"Send notifications to Slack channels",connected:false,icon:"S"},
-                  {name:"Microsoft 365",desc:"Sync with Office 365 and Teams",connected:false,icon:"M"},
-                  {name:"BambooHR",desc:"Import employee data from BambooHR",connected:false,icon:"B"},
-                  {name:"Zapier",desc:"Automate workflows with 5000+ apps",connected:false,icon:"Z"},
-                  {name:"Payroll System",desc:"Sync attendance data for payroll",connected:true,icon:"P"},
-                ].map(i=>(
-                  <div key={i.name} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600 flex-shrink-0">{i.icon}</div>
-                    <div className="flex-1"><p className="text-sm font-medium text-gray-800">{i.name}</p><p className="text-xs text-gray-400">{i.desc}</p></div>
-                    <Btn size="sm" variant={i.connected?"outline":"primary"}>{i.connected?"Manage":"Connect"}</Btn>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {section==="About"&&(
-            <div className="max-w-sm space-y-5">
-              <h2 className="text-base font-semibold text-gray-900">About</h2>
-              <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-                {[["Product","Attendance HRMS"],["Version","3.2.1"],["Edition","Enterprise"],["License","Acme Corporation"],["Users","847 / 1000"],["Support","Priority Support"],["Expires","Dec 31, 2025"]].map(([k,v])=>(
-                  <div key={k as string} className="flex justify-between text-sm py-1.5 border-b border-gray-100 last:border-0"><span className="text-gray-500">{k}</span><span className="font-medium text-gray-800">{v}</span></div>
-                ))}
-              </div>
-              <div className="flex gap-3">
-                <Btn variant="outline" size="sm">Documentation</Btn>
-                <Btn variant="outline" size="sm">Release Notes</Btn>
-              </div>
-            </div>
-          )}
-
-        </div>
-      </div>
-      {settingsToast&&(
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gray-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">
-          <CheckCircle size={15} className="text-green-400 flex-shrink-0"/>Settings saved successfully
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ── View Profile Page ──────────────────────────────────────────────────────────
 function ViewProfilePage({ navigate }: { navigate:(p:AppPage)=>void }) {
@@ -3644,687 +3980,9 @@ function ViewProfilePage({ navigate }: { navigate:(p:AppPage)=>void }) {
 }
 
 // ── Notification Center Page ───────────────────────────────────────────────────
-function NotificationCenterPage({ navigate }: { navigate:(p:AppPage)=>void }) {
-  const ALL_NOTIFS = [
-    {id:"n1",type:"leave",title:"Leave Request – Sarah Mitchell",msg:"Applied for 5 days Annual Leave (Jul 8–12)",time:"10 min ago",read:false,page:"leave" as AppPage},
-    {id:"n2",type:"attendance",title:"Missing Punch – 14 Employees",msg:"14 employees have missing check-out today",time:"1 hr ago",read:false,page:"attendance" as AppPage},
-    {id:"n3",type:"employee",title:"New Joiner – Yuki Tanaka",msg:"Yuki Tanaka joins Engineering team today",time:"3 hr ago",read:true,page:"organization" as AppPage},
-    {id:"n4",type:"leave",title:"Leave Approved – Marcus Johnson",msg:"Sick leave request approved for 2 days",time:"5 hr ago",read:true,page:"leave" as AppPage},
-    {id:"n5",type:"system",title:"Attendance Sync Complete",msg:"Biometric sync completed — 834 records updated",time:"1 day ago",read:true,page:"attendance" as AppPage},
-    {id:"n6",type:"approval",title:"Approval Required – Shift Change",msg:"David Chen requested shift modification for Engineering",time:"2 days ago",read:false,page:"my-space" as AppPage},
-    {id:"n7",type:"tasks",title:"Task Overdue – Q2 Report",msg:"Q2 Performance Report submission is 2 days overdue",time:"2 days ago",read:false,page:"tasks" as AppPage},
-    {id:"n8",type:"announcement",title:"New Announcement – Policy Update",msg:"Leave policy FY2025 has been published",time:"3 days ago",read:true,page:"my-space" as AppPage},
-    {id:"n9",type:"attendance",title:"Late Arrivals – 8 Employees",msg:"8 employees arrived more than 30 minutes late today",time:"3 days ago",read:true,page:"attendance" as AppPage},
-    {id:"n10",type:"system",title:"System Maintenance Scheduled",msg:"Platform maintenance Jul 7, 11 PM – 3 AM EST",time:"4 days ago",read:true,page:"support" as AppPage},
-  ];
-
-  const [notifs, setNotifs] = useState(ALL_NOTIFS);
-  const [activeTab, setActiveTab] = useState("All");
-  const [search, setSearch] = useState("");
-  const [archived, setArchived] = useState<string[]>([]);
-
-  const TABS = ["All","Unread","Approvals","Attendance","Leave","Tasks","Announcements","System"];
-  const TYPE_MAP: Record<string,{icon:any;color:string}> = {
-    leave:{icon:CalendarDays,color:"#F59E0B"},
-    attendance:{icon:Clock,color:"#5C5CFF"},
-    employee:{icon:UserPlus,color:"#3B82F6"},
-    system:{icon:CheckCircle,color:"#6B7280"},
-    approval:{icon:CheckCircle,color:"#8B5CF6"},
-    tasks:{icon:ClipboardList,color:"#22C55E"},
-    announcement:{icon:Megaphone,color:"#EC4899"},
-  };
-
-  const filtered = notifs
-    .filter(n=>!archived.includes(n.id))
-    .filter(n=>activeTab==="All"?true:activeTab==="Unread"?!n.read:n.type===activeTab.toLowerCase()||n.type===activeTab.slice(0,-1).toLowerCase())
-    .filter(n=>!search||(n.title+n.msg).toLowerCase().includes(search.toLowerCase()));
-
-  const markRead = (id:string) => setNotifs(ns=>ns.map(n=>n.id===id?{...n,read:true}:n));
-  const markAllRead = () => setNotifs(ns=>ns.map(n=>({...n,read:true})));
-  const archive = (id:string) => setArchived(a=>[...a,id]);
-  const del = (id:string) => setNotifs(ns=>ns.filter(n=>n.id!==id));
-  const unreadCount = notifs.filter(n=>!n.read&&!archived.includes(n.id)).length;
-
-  return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="Notification Center" breadcrumbs={[{label:"Home",onClick:()=>navigate("my-space")},{label:"Notifications"}]}>
-        <div className="flex gap-2">
-          <Btn variant="outline" size="sm" onClick={markAllRead}><CheckCircle size={12}/>Mark All Read</Btn>
-          <Btn variant="outline" size="sm"><Download size={12}/>Export</Btn>
-        </div>
-      </PageHeader>
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Toolbar */}
-        <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3 flex-shrink-0">
-          <div className="relative flex-1 max-w-xs"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Search notifications…" value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]"/></div>
-          {unreadCount>0&&<span className="text-xs text-[#5C5CFF] font-medium">{unreadCount} unread</span>}
-        </div>
-        {/* Tab bar */}
-        <div className="bg-white border-b border-gray-200 px-6 flex gap-0 flex-shrink-0 overflow-x-auto">
-          {TABS.map(t=>{
-            const cnt = t==="Unread" ? unreadCount : t==="All" ? notifs.filter(n=>!archived.includes(n.id)).length : notifs.filter(n=>!archived.includes(n.id)&&(n.type===t.toLowerCase()||n.type===t.slice(0,-1).toLowerCase())).length;
-            return (
-              <button key={t} onClick={()=>setActiveTab(t)} className={cn("px-4 py-3 text-xs font-medium border-b-2 whitespace-nowrap transition-colors flex items-center gap-1.5",activeTab===t?"border-[#5C5CFF] text-[#5C5CFF]":"border-transparent text-gray-500 hover:text-gray-700")}>
-                {t}{cnt>0&&<span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full",activeTab===t?"bg-[#5C5CFF] text-white":"bg-gray-100 text-gray-500")}>{cnt}</span>}
-              </button>
-            );
-          })}
-        </div>
-        {/* List */}
-        <div className="flex-1 overflow-auto">
-          {filtered.length===0&&(
-            <div className="flex flex-col items-center justify-center h-48 text-gray-400">
-              <Bell size={32} className="mb-3 opacity-30"/>
-              <p className="text-sm font-medium">No notifications</p>
-              <p className="text-xs mt-0.5">You're all caught up!</p>
-            </div>
-          )}
-          {filtered.map(n=>{
-            const {icon:Icon,color}=TYPE_MAP[n.type]||TYPE_MAP.system;
-            return (
-              <div key={n.id} className={cn("flex items-start gap-4 px-6 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors group",!n.read&&"bg-[#EEF2FF]/30")}>
-                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{backgroundColor:color+"18"}}><Icon size={15} style={{color}}/></div>
-                <button className="flex-1 text-left min-w-0" onClick={()=>{markRead(n.id);navigate(n.page);}}>
-                  <div className="flex items-center gap-2"><p className={cn("text-sm font-medium",!n.read?"text-gray-900":"text-gray-700")}>{n.title}</p>{!n.read&&<div className="w-2 h-2 rounded-full bg-[#5C5CFF] flex-shrink-0"/>}</div>
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">{n.msg}</p>
-                  <p className="text-[10px] text-gray-400 mt-1">{n.time}</p>
-                </button>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  {!n.read&&<button onClick={()=>markRead(n.id)} title="Mark as read" className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-600"><CheckCircle size={13}/></button>}
-                  <button onClick={()=>archive(n.id)} title="Archive" className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-600"><Archive size={13}/></button>
-                  <button onClick={()=>del(n.id)} title="Delete" className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500"><Trash2 size={13}/></button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Support Page ───────────────────────────────────────────────────────────────
-function SupportPage({ navigate }: { navigate:(p:AppPage)=>void }) {
-  const [modal, setModal] = useState<string|null>(null);
-  const [tab, setTab] = useState("Home");
-  const [chatMsg, setChatMsg] = useState("");
-  const [chatHistory, setChatHistory] = useState<{role:string;text:string}[]>([{role:"agent",text:"Hi! I'm the support assistant. How can I help you today?"}]);
-  const [ticketForm, setTicketForm] = useState({subject:"",priority:"Medium",category:"Technical",desc:""});
-  const [submitted, setSubmitted] = useState(false);
-
-  const sendChat = () => {
-    if(!chatMsg.trim()) return;
-    const msg = chatMsg;
-    setChatMsg("");
-    setChatHistory(h=>[...h,{role:"user",text:msg}]);
-    setTimeout(()=>setChatHistory(h=>[...h,{role:"agent",text:"Thanks for reaching out! Our team will look into this. In the meantime, you can check our documentation for quick answers."}]),800);
-  };
-
-  const ARTICLES = [
-    {title:"Getting started with Attendance HRMS",category:"Onboarding",views:1243},
-    {title:"How to configure shift policies",category:"Operations",views:892},
-    {title:"Setting up approval workflows",category:"Approvals",views:754},
-    {title:"Managing leave balances and types",category:"Leave",views:631},
-    {title:"Bulk importing employees via CSV",category:"Employees",views:589},
-    {title:"Geo-fencing setup for remote workers",category:"Attendance",views:412},
-  ];
-
-  return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="Help & Support" breadcrumbs={[{label:"Home",onClick:()=>navigate("my-space")},{label:"Help & Support"}]}/>
-      <div className="flex-1 overflow-auto">
-        {/* Tab bar */}
-        <div className="bg-white border-b border-gray-200 px-6">
-          <div className="flex gap-0">
-            {["Home","Documentation","Knowledge Base","Release Notes"].map(t=>(
-              <button key={t} onClick={()=>setTab(t)} className={cn("px-4 py-3 text-sm font-medium border-b-2 transition-colors",tab===t?"border-[#5C5CFF] text-[#5C5CFF]":"border-transparent text-gray-500 hover:text-gray-700")}>{t}</button>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-6 max-w-5xl mx-auto space-y-6">
-          {tab==="Home"&&(
-            <>
-              {/* Hero */}
-              <div className="bg-gradient-to-br from-[#5C5CFF] to-[#4A4AE0] rounded-2xl p-8 text-white text-center">
-                <h2 className="text-2xl font-semibold mb-2">How can we help you?</h2>
-                <p className="text-white/70 text-sm mb-5">Search our knowledge base or reach out directly</p>
-                <div className="relative max-w-md mx-auto">
-                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50"/>
-                  <input type="text" placeholder="Search for answers…" className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"/>
-                </div>
-              </div>
-
-              {/* Primary CTAs */}
-              <div className="grid grid-cols-3 gap-4">
-                {([
-                  {icon:MessageCircle,label:"Live Chat",desc:"Chat with support in real time",color:"#5C5CFF",action:"chat"},
-                  {icon:Send,label:"Raise a Ticket",desc:"Submit a support request",color:"#22C55E",action:"ticket"},
-                  {icon:BookOpen,label:"Knowledge Base",desc:"Browse articles and guides",color:"#F59E0B",action:()=>setTab("Knowledge Base")},
-                ] as any[]).map(s=>(
-                  <button key={s.label} onClick={()=>typeof s.action==="string"?setModal(s.action):s.action()} className="bg-white rounded-xl border border-gray-200 p-5 text-left hover:border-[#5C5CFF]/40 hover:shadow-sm transition-all group">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{backgroundColor:s.color+"18"}}><s.icon size={18} style={{color:s.color}}/></div>
-                    <h4 className="text-sm font-semibold text-gray-800 mb-1">{s.label}</h4>
-                    <p className="text-xs text-gray-500">{s.desc}</p>
-                  </button>
-                ))}
-              </div>
-
-              {/* Secondary CTAs */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white rounded-xl border border-gray-200 p-5">
-                  <h4 className="text-sm font-semibold text-gray-800 mb-3">More Options</h4>
-                  <div className="space-y-1">
-                    {([
-                      {icon:AlertCircle,label:"Report a Bug",action:"bug"},
-                      {icon:Star,label:"Feature Request",action:"feature"},
-                      {icon:FileText,label:"Release Notes",action:()=>setTab("Release Notes")},
-                      {icon:Info,label:"About Product",action:"about"},
-                    ] as any[]).map(item=>(
-                      <button key={item.label} onClick={()=>typeof item.action==="string"?setModal(item.action):item.action()} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-left transition-colors">
-                        <item.icon size={14} className="text-gray-400 flex-shrink-0"/>
-                        <span className="text-sm text-gray-700">{item.label}</span>
-                        <ArrowRight size={13} className="ml-auto text-gray-300"/>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-5">
-                  <h4 className="text-sm font-semibold text-gray-800 mb-3">Legal</h4>
-                  <div className="space-y-1">
-                    {([
-                      {icon:Shield,label:"Privacy Policy",action:"privacy"},
-                      {icon:FileText,label:"Terms of Service",action:"terms"},
-                      {icon:Lock,label:"Security Policy",action:"security"},
-                    ] as any[]).map(item=>(
-                      <button key={item.label} onClick={()=>setModal(item.action)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-left transition-colors">
-                        <item.icon size={14} className="text-gray-400 flex-shrink-0"/>
-                        <span className="text-sm text-gray-700">{item.label}</span>
-                        <ArrowRight size={13} className="ml-auto text-gray-300"/>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-gray-100">
-                    <p className="text-xs text-gray-400">Attendance HRMS v2.4.1 · © 2024 Acme Corp</p>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {tab==="Documentation"&&(
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                {([
-                  {icon:Users,label:"Employee Management",count:24},
-                  {icon:Clock,label:"Attendance & Shifts",count:18},
-                  {icon:CalendarDays,label:"Leave Management",count:15},
-                  {icon:ClipboardList,label:"Tasks & Approvals",count:12},
-                  {icon:Building2,label:"Organization Setup",count:20},
-                  {icon:Settings,label:"System Configuration",count:31},
-                ] as any[]).map(cat=>(
-                  <button key={cat.label} className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-[#5C5CFF]/40 hover:shadow-sm transition-all">
-                    <div className="w-9 h-9 rounded-lg bg-[#EEF2FF] flex items-center justify-center mb-3"><cat.icon size={16} className="text-[#5C5CFF]"/></div>
-                    <p className="text-sm font-semibold text-gray-800">{cat.label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{cat.count} articles</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {tab==="Knowledge Base"&&(
-            <div className="space-y-3">
-              {ARTICLES.map((a,i)=>(
-                <button key={i} className="w-full bg-white rounded-xl border border-gray-200 p-4 text-left flex items-center gap-4 hover:border-[#5C5CFF]/40 hover:shadow-sm transition-all">
-                  <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0"><BookOpen size={15} className="text-gray-400"/></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">{a.title}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{a.category} · {a.views.toLocaleString()} views</p>
-                  </div>
-                  <ArrowRight size={14} className="text-gray-300 flex-shrink-0"/>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {tab==="Release Notes"&&(
-            <div className="space-y-4">
-              {([
-                {version:"2.4.1",date:"Jun 28, 2024",notes:["Fixed attendance sync for biometric devices","Improved leave balance calculation","Bug fix: shift overlap detection"]},
-                {version:"2.4.0",date:"Jun 10, 2024",notes:["New: Geo-fence attendance tracking","New: Bulk employee import via CSV","Improved: Dashboard analytics performance","New: Notification preferences"]},
-                {version:"2.3.5",date:"May 22, 2024",notes:["Fixed approval email notifications","New: Department hierarchy view","Improved: Mobile responsiveness"]},
-              ] as any[]).map(r=>(
-                <div key={r.version} className="bg-white rounded-xl border border-gray-200 p-5">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-sm font-bold text-[#5C5CFF]">v{r.version}</span>
-                    <span className="text-xs text-gray-400">{r.date}</span>
-                    {r.version==="2.4.1"&&<span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-medium">Latest</span>}
-                  </div>
-                  <ul className="space-y-1.5">
-                    {r.notes.map((n:string,i:number)=>(
-                      <li key={i} className="flex items-start gap-2 text-sm text-gray-600"><div className="w-1.5 h-1.5 rounded-full bg-[#5C5CFF] mt-1.5 flex-shrink-0"/>{n}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Live Chat Modal ── */}
-      {modal==="chat"&&(
-        <div className="fixed inset-0 z-50 flex items-end justify-end p-6" onClick={()=>setModal(null)}>
-          <div className="absolute inset-0 bg-black/20"/>
-          <div className="relative bg-white rounded-2xl shadow-2xl w-80 flex flex-col" style={{height:"480px"}} onClick={e=>e.stopPropagation()}>
-            <div className="flex items-center gap-3 px-4 py-3.5 bg-[#5C5CFF] rounded-t-2xl">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"><MessageCircle size={14} className="text-white"/></div>
-              <div className="flex-1"><p className="text-sm font-semibold text-white">Live Support</p><p className="text-[10px] text-white/70 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-300 rounded-full inline-block"/>Online · avg reply &lt;2 min</p></div>
-              <button onClick={()=>setModal(null)} className="text-white/60 hover:text-white"><X size={15}/></button>
-            </div>
-            <div className="flex-1 overflow-auto p-4 space-y-3">
-              {chatHistory.map((m,i)=>(
-                <div key={i} className={cn("flex",m.role==="user"?"justify-end":"justify-start")}>
-                  <div className={cn("max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm",m.role==="user"?"bg-[#5C5CFF] text-white":"bg-gray-100 text-gray-800")}>{m.text}</div>
-                </div>
-              ))}
-            </div>
-            <div className="px-3 py-3 border-t border-gray-100 flex gap-2">
-              <input value={chatMsg} onChange={e=>setChatMsg(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder="Type a message…" className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]"/>
-              <button onClick={sendChat} className="w-9 h-9 bg-[#5C5CFF] rounded-lg flex items-center justify-center text-white"><Send size={13}/></button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Raise Ticket Modal ── */}
-      {modal==="ticket"&&(
-        <Modal title="Raise a Support Ticket" onClose={()=>{setModal(null);setSubmitted(false);}} width="max-w-lg">
-          {submitted?(
-            <div className="text-center py-8">
-              <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4"><CheckCircle size={28} className="text-green-500"/></div>
-              <p className="text-base font-semibold text-gray-900 mb-1">Ticket Submitted!</p>
-              <p className="text-sm text-gray-500 mb-1">Your ticket ID is <strong>#TKT-2024-0847</strong></p>
-              <p className="text-xs text-gray-400">We'll respond within 4 business hours.</p>
-              <Btn className="mt-5" onClick={()=>{setModal(null);setSubmitted(false);}}>Done</Btn>
-            </div>
-          ):(
-            <div className="space-y-3">
-              <InputField label="Subject" value={ticketForm.subject} onChange={(e:any)=>setTicketForm(p=>({...p,subject:e.target.value}))} placeholder="Brief description of the issue" required/>
-              <div className="grid grid-cols-2 gap-3">
-                <SelectField label="Priority" value={ticketForm.priority} onChange={(e:any)=>setTicketForm(p=>({...p,priority:e.target.value}))}>
-                  <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
-                </SelectField>
-                <SelectField label="Category" value={ticketForm.category} onChange={(e:any)=>setTicketForm(p=>({...p,category:e.target.value}))}>
-                  <option>Technical</option><option>Billing</option><option>Feature</option><option>Other</option>
-                </SelectField>
-              </div>
-              <div className="flex flex-col gap-1"><label className="text-xs font-semibold text-gray-600">Description <span className="text-red-500">*</span></label><textarea rows={4} value={ticketForm.desc} onChange={e=>setTicketForm(p=>({...p,desc:e.target.value}))} placeholder="Describe the issue in detail…" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]"/></div>
-              <div className="border-2 border-dashed border-gray-200 rounded-lg p-3 text-center cursor-pointer hover:border-[#5C5CFF]/40 transition-colors">
-                <p className="text-xs text-gray-400">Attach screenshots (optional) · Click to upload</p>
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-                <Btn variant="outline" onClick={()=>setModal(null)}>Cancel</Btn>
-                <Btn onClick={()=>setSubmitted(true)}>Submit Ticket</Btn>
-              </div>
-            </div>
-          )}
-        </Modal>
-      )}
-
-      {/* ── Report Bug Modal ── */}
-      {modal==="bug"&&(
-        <Modal title="Report a Bug" onClose={()=>setModal(null)} width="max-w-md">
-          <div className="space-y-3">
-            <InputField label="Bug Title" placeholder="What went wrong?" required/>
-            <SelectField label="Severity"><option>Minor</option><option>Major</option><option>Critical</option></SelectField>
-            <div className="flex flex-col gap-1"><label className="text-xs font-semibold text-gray-600">Steps to Reproduce</label><textarea rows={3} placeholder="1. Go to…&#10;2. Click on…&#10;3. See error" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]"/></div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-              <Btn variant="outline" onClick={()=>setModal(null)}>Cancel</Btn>
-              <Btn onClick={()=>setModal("bug-sent")}>Submit Bug Report</Btn>
-            </div>
-          </div>
-        </Modal>
-      )}
-      {modal==="bug-sent"&&(
-        <Modal title="Bug Reported" onClose={()=>setModal(null)}>
-          <div className="text-center py-6">
-            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3"><CheckCircle size={24} className="text-green-500"/></div>
-            <p className="text-sm font-semibold text-gray-900 mb-1">Bug report submitted</p>
-            <p className="text-xs text-gray-400">Our engineering team will investigate. Ref: #BUG-2024-0441</p>
-            <Btn className="mt-4" onClick={()=>setModal(null)}>Close</Btn>
-          </div>
-        </Modal>
-      )}
-
-      {/* ── Feature Request Modal ── */}
-      {modal==="feature"&&(
-        <Modal title="Feature Request" onClose={()=>setModal(null)} width="max-w-md">
-          <div className="space-y-3">
-            <InputField label="Feature Title" placeholder="What would you like to see?" required/>
-            <div className="flex flex-col gap-1"><label className="text-xs font-semibold text-gray-600">Description</label><textarea rows={4} placeholder="Describe the feature and its use case…" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#5C5CFF]"/></div>
-            <SelectField label="Priority"><option>Nice to have</option><option>Important</option><option>Critical</option></SelectField>
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-              <Btn variant="outline" onClick={()=>setModal(null)}>Cancel</Btn>
-              <Btn onClick={()=>setModal(null)}>Submit Request</Btn>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* ── About Modal ── */}
-      {modal==="about"&&(
-        <Modal title="About Attendance HRMS" onClose={()=>setModal(null)} width="max-w-sm">
-          <div className="text-center py-4 space-y-3">
-            <div className="w-16 h-16 rounded-2xl bg-[#5C5CFF] flex items-center justify-center mx-auto"><Users size={28} className="text-white"/></div>
-            <div><p className="text-base font-bold text-gray-900">Attendance HRMS</p><p className="text-xs text-gray-400">Enterprise Edition · v2.4.1</p></div>
-            <div className="text-xs text-gray-500 space-y-0.5">
-              <p>Build: 2024.06.28</p><p>License: Enterprise · Acme Corporation</p><p>Support: support@attendancehrms.com</p>
-            </div>
-            <Btn className="w-full justify-center" onClick={()=>setModal(null)}>Close</Btn>
-          </div>
-        </Modal>
-      )}
-
-      {/* ── Privacy / Terms / Security Modals ── */}
-      {(modal==="privacy"||modal==="terms"||modal==="security")&&(
-        <Modal title={modal==="privacy"?"Privacy Policy":modal==="terms"?"Terms of Service":"Security Policy"} onClose={()=>setModal(null)} width="max-w-lg">
-          <div className="prose prose-sm max-w-none text-gray-600 space-y-3 max-h-80 overflow-auto">
-            <p className="font-semibold text-gray-800">{modal==="privacy"?"Last updated: June 1, 2024":modal==="terms"?"Effective: January 1, 2024":"Version: 3.0 · June 2024"}</p>
-            {modal==="privacy"&&<><p>Attendance HRMS collects and processes personal data in accordance with applicable data protection laws including GDPR and CCPA. Data is used solely for HR management purposes and is never sold to third parties.</p><p>Employee data including attendance records, personal information, and employment history is stored securely using AES-256 encryption at rest and TLS 1.3 in transit.</p><p>You have the right to access, correct, and delete your personal data at any time by contacting your HR administrator.</p></>}
-            {modal==="terms"&&<><p>By accessing or using Attendance HRMS, you agree to be bound by these Terms of Service. The software is licensed, not sold. Your organization's administrator is responsible for proper use and configuration.</p><p>Attendance HRMS is provided "as is" for enterprise HR management. Usage is subject to your organization's license agreement with Acme Corporation.</p></>}
-            {modal==="security"&&<><p>Attendance HRMS implements enterprise-grade security including multi-factor authentication, role-based access control, and comprehensive audit logging.</p><p>All data transmissions are encrypted using TLS 1.3. Data at rest uses AES-256 encryption. Regular security audits are conducted by third-party firms.</p></>}
-          </div>
-          <div className="flex justify-end mt-4 pt-3 border-t border-gray-200"><Btn onClick={()=>setModal(null)}>Close</Btn></div>
-        </Modal>
-      )}
-    </div>
-  );
-}
-
-// ── AI Panel ───────────────────────────────────────────────────────────────────
-function AIPanel({ onClose, navigate }: { onClose:()=>void; navigate:(p:AppPage)=>void }) {
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<{role:string;content:string}[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const COMMANDS = [
-    {label:"Search Employees",icon:Search,action:()=>navigate("organization"),reply:"Opening Employee Directory…"},
-    {label:"Show Today's Absentees",icon:UserX,action:()=>navigate("attendance"),reply:"Today: 17 absent, 14 missing check-outs. Opening Attendance Exceptions…"},
-    {label:"Show Missing Check-ins",icon:Clock,action:()=>navigate("attendance"),reply:"8 employees haven't checked in yet. Opening Attendance…"},
-    {label:"Review Pending Approvals",icon:CheckCircle,action:()=>navigate("my-space"),reply:"17 approvals pending: 3 leave, 8 attendance, 6 access control. Opening approvals…"},
-    {label:"Open Leave Requests",icon:CalendarDays,action:()=>navigate("leave"),reply:"3 leave requests awaiting approval. Opening Leave…"},
-    {label:"Generate Attendance Summary",icon:BarChart2,action:()=>navigate("attendance"),reply:"Today: 734 present (86.7%), 32 late, 17 absent, 21 WFH, 43 on leave. Opening Attendance…"},
-    {label:"Create Task",icon:ClipboardList,action:()=>navigate("tasks"),reply:"Opening task creation…"},
-    {label:"Open Organization",icon:Building2,action:()=>navigate("organization"),reply:"Opening Organization module…"},
-  ];
-
-  const SUGGESTIONS = [
-    "How many employees are on leave today?",
-    "Show attendance exceptions",
-    "Find employees in Engineering",
-    "What needs my attention today?",
-  ];
-
-  const send = (text: string) => {
-    const q = text || input;
-    if (!q.trim()) return;
-    setMessages(m => [...m, {role:"user", content:q}]);
-    setInput(""); setLoading(true);
-    setTimeout(() => {
-      let reply = "Let me look that up for you.";
-      const ql = q.toLowerCase();
-      if (ql.includes("leave")) { reply = "Currently 43 employees on leave. 3 requests pending approval. Opening Leave…"; setTimeout(()=>navigate("leave"),1500); }
-      else if (ql.includes("absent") || ql.includes("exception") || ql.includes("check-in") || ql.includes("attendance")) { reply = "Today: 734 present, 32 late, 17 absent. 14 missing check-outs need review. Opening Attendance…"; setTimeout(()=>navigate("attendance"),1500); }
-      else if (ql.includes("engineer") || ql.includes("employee") || ql.includes("find") || ql.includes("search")) { reply = "Engineering has 234 employees. Opening Organization → Employees…"; setTimeout(()=>navigate("organization"),1500); }
-      else if (ql.includes("task")) { reply = "You have 5 open tasks: 2 high priority, 2 overdue. Opening Tasks…"; setTimeout(()=>navigate("tasks"),1500); }
-      else if (ql.includes("approval") || ql.includes("pending") || ql.includes("attention")) { reply = "17 pending approvals: 3 leave requests, 8 attendance corrections, 6 access reviews. Opening My Space…"; setTimeout(()=>navigate("my-space"),1500); }
-      else if (ql.includes("summary") || ql.includes("report")) { reply = "Organization health is at 82%. Attendance avg: 95.8%. Headcount: 847 (+12 this month). See Reports for full details."; }
-      setMessages(m => [...m, {role:"assistant", content:reply}]);
-      setLoading(false);
-    }, 900);
-  };
-
-  const runCommand = (cmd: typeof COMMANDS[0]) => {
-    setMessages(m => [...m, {role:"user", content:cmd.label}, {role:"assistant", content:cmd.reply}]);
-    setTimeout(cmd.action, 1200);
-  };
-
-  return (
-    <div className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-gray-200 flex flex-col z-30 shadow-xl">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-[#EEF2FF] to-white">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#5C5CFF] flex items-center justify-center shadow-sm"><Bot size={15} className="text-white"/></div>
-          <div>
-            <p className="text-sm font-semibold text-gray-900">AI Assistant</p>
-            <p className="text-[10px] text-green-500 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-400 rounded-full inline-block"/>Online</p>
-          </div>
-        </div>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X size={15}/></button>
-      </div>
-
-      {/* Command shortcuts — shown when no messages */}
-      {messages.length === 0 && (
-        <div className="flex-1 overflow-auto">
-          <div className="p-4">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Commands</p>
-            <div className="space-y-1">
-              {COMMANDS.map(cmd => (
-                <button key={cmd.label} onClick={() => runCommand(cmd)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#EEF2FF] hover:text-[#5C5CFF] text-left transition-colors group border border-transparent hover:border-[#5C5CFF]/20">
-                  <cmd.icon size={14} className="text-gray-400 group-hover:text-[#5C5CFF] flex-shrink-0"/>
-                  <span className="text-sm text-gray-700 group-hover:text-[#5C5CFF]">{cmd.label}</span>
-                  <ArrowRight size={12} className="ml-auto text-gray-300 group-hover:text-[#5C5CFF]"/>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="px-4 pb-4">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Smart Suggestions</p>
-            <div className="space-y-1.5">
-              {SUGGESTIONS.map(s => (
-                <button key={s} onClick={() => send(s)} className="w-full text-left text-xs text-gray-600 px-3 py-2 bg-gray-50 hover:bg-[#EEF2FF] hover:text-[#5C5CFF] rounded-lg transition-colors border border-gray-100">
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Messages */}
-      {messages.length > 0 && (
-        <div className="flex-1 overflow-auto p-4 space-y-3">
-          {messages.map((m,i) => (
-            <div key={i} className={cn("flex", m.role==="user"?"justify-end":"justify-start")}>
-              {m.role==="assistant"&&<div className="w-6 h-6 rounded-full bg-[#5C5CFF] flex items-center justify-center flex-shrink-0 mr-2 mt-0.5"><Bot size={11} className="text-white"/></div>}
-              <div className={cn("max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed", m.role==="user"?"bg-[#5C5CFF] text-white rounded-br-sm":"bg-gray-100 text-gray-800 rounded-bl-sm")}>{m.content}</div>
-            </div>
-          ))}
-          {loading&&(
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-[#5C5CFF] flex items-center justify-center flex-shrink-0"><Bot size={11} className="text-white"/></div>
-              <div className="bg-gray-100 rounded-xl px-3.5 py-2.5"><div className="flex gap-1">{[0,150,300].map(d=><div key={d} className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:`${d}ms`}}/>)}</div></div>
-            </div>
-          )}
-          <button onClick={()=>setMessages([])} className="w-full text-center text-[10px] text-gray-400 hover:text-[#5C5CFF] py-1">← Back to commands</button>
-        </div>
-      )}
-
-      {/* Input */}
-      <div className="border-t border-gray-200 p-3 flex-shrink-0">
-        <div className="flex gap-2">
-          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send(input)} placeholder="Ask me anything…" className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C5CFF] bg-gray-50 focus:bg-white transition-colors"/>
-          <button onClick={()=>send(input)} className="w-9 h-9 bg-[#5C5CFF] rounded-lg flex items-center justify-center text-white hover:bg-[#4A4AE0] transition-colors flex-shrink-0 disabled:opacity-50" disabled={!input.trim()}><Send size={13}/></button>
-        </div>
-        <p className="text-[10px] text-gray-400 mt-1.5 text-center">Ctrl+K to open · Esc to close</p>
-      </div>
-    </div>
-  );
-}
-
-// ── Notifications Panel ────────────────────────────────────────────────────────
-function NotificationsPanel({ onClose, navigate, onViewAll }: { onClose:()=>void; navigate:(p:AppPage)=>void; onViewAll:()=>void }) {
-  const iconMap: Record<string,{icon:any;color:string}> = {
-    leave:{icon:CalendarDays,color:"#F59E0B"},attendance:{icon:Clock,color:"#5C5CFF"},employee:{icon:UserPlus,color:"#3B82F6"},system:{icon:CheckCircle,color:"#6B7280"}
-  };
-  return (
-    <div className="absolute right-4 top-14 w-80 bg-white rounded-xl border border-gray-200 shadow-xl z-50" onClick={e=>e.stopPropagation()}>
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-800">Notifications</h3>
-        <div className="flex gap-2"><button className="text-xs text-[#5C5CFF] hover:underline">Mark all read</button><button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={14}/></button></div>
-      </div>
-      <div className="max-h-80 overflow-auto divide-y divide-gray-100">
-        {NOTIFICATIONS.map(n=>{
-          const {icon:Icon,color}=iconMap[n.type]||iconMap.system;
-          return (
-            <button key={n.id} onClick={()=>{navigate(n.action);onClose();}} className={cn("w-full flex gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors",!n.read&&"bg-[#EEF2FF]/40")}>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{backgroundColor:color+"18"}}><Icon size={14} style={{color}}/></div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2"><p className="text-xs font-medium text-gray-800">{n.title}</p>{!n.read&&<div className="w-1.5 h-1.5 bg-[#5C5CFF] rounded-full flex-shrink-0"/>}</div>
-                <p className="text-xs text-gray-500 mt-0.5 truncate">{n.message}</p>
-                <p className="text-[10px] text-gray-400 mt-1">{n.time}</p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-      <div className="px-4 py-3 border-t border-gray-200 text-center"><button onClick={onViewAll} className="text-xs text-[#5C5CFF] hover:underline font-medium">View all notifications</button></div>
-    </div>
-  );
-}
-
-// ── Quick Actions Menu ─────────────────────────────────────────────────────────
-function QuickActionsMenu({ onClose, navigate }: { onClose:()=>void; navigate:(p:AppPage)=>void }) {
-  const actions = [
-    { icon:UserPlus,  label:"Add Employee",        page:"employee-add"  as AppPage, desc:"Create a new employee profile" },
-    { icon:GitBranch, label:"Add Department",       page:"organization"  as AppPage, desc:"Add a new department" },
-    { icon:ClipboardList, label:"Create Task",      page:"tasks"         as AppPage, desc:"Assign a task to a team member" },
-    { icon:Megaphone, label:"Create Announcement",  page:"my-space"      as AppPage, desc:"Post to the organization" },
-    { icon:CalendarDays, label:"Create Holiday",    page:"organization"  as AppPage, desc:"Add to the holiday calendar" },
-    { icon:Clock,     label:"Create Shift",         page:"organization"  as AppPage, desc:"Define a new shift template" },
-  ];
-  return (
-    <div className="absolute left-1/2 top-14 -translate-x-1/2 w-80 bg-white rounded-xl border border-gray-200 shadow-xl z-50" onClick={e=>e.stopPropagation()}>
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-800">Quick Actions</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={14}/></button>
-      </div>
-      <div className="p-2 grid grid-cols-2 gap-1">
-        {actions.map(a=>(
-          <button key={a.label} onClick={()=>{navigate(a.page);onClose();}} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-[#EEF2FF] text-left transition-colors group">
-            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 group-hover:bg-[#5C5CFF]/10 transition-colors"><a.icon size={15} className="text-gray-500 group-hover:text-[#5C5CFF] transition-colors"/></div>
-            <div className="min-w-0"><p className="text-xs font-semibold text-gray-800 group-hover:text-[#5C5CFF] transition-colors leading-snug">{a.label}</p><p className="text-[10px] text-gray-400 truncate">{a.desc}</p></div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ── Tasks Page ─────────────────────────────────────────────────────────────────
-function TasksPage({ navigate }: { navigate:(p:AppPage)=>void }) {
-  const [filter, setFilter] = useState("All");
-  const [tasks, setTasks] = useState([
-    { id:"T001", title:"Review Q2 attendance report", assignee:"Alex Admin", dept:"HR", priority:"High", due:"Jul 3, 2024", status:"In Progress" },
-    { id:"T002", title:"Update leave policy for FY2025", assignee:"Aisha Thompson", dept:"HR", priority:"High", due:"Jul 5, 2024", status:"Todo" },
-    { id:"T003", title:"Onboard 3 new engineering hires", assignee:"David Chen", dept:"Engineering", priority:"Medium", due:"Jul 8, 2024", status:"Todo" },
-    { id:"T004", title:"Prepare department headcount report", assignee:"Jennifer Walsh", dept:"Finance", priority:"Medium", due:"Jul 10, 2024", status:"In Progress" },
-    { id:"T005", title:"Configure geo-fence for Austin office", assignee:"Alex Admin", dept:"Operations", priority:"Low", due:"Jul 15, 2024", status:"Todo" },
-    { id:"T006", title:"Send welcome email to new joiners", assignee:"Aisha Thompson", dept:"HR", priority:"Low", due:"Jul 1, 2024", status:"Done" },
-    { id:"T007", title:"Audit access roles for Finance team", assignee:"Alex Admin", dept:"Security", priority:"High", due:"Jul 2, 2024", status:"Done" },
-  ]);
-  const [showCreate, setShowCreate] = useState(false);
-  const [taskMenu, setTaskMenu] = useState<string|null>(null);
-  const deleteTask = (id:string) => setTasks(ts=>ts.filter(t=>t.id!==id));
-  const setTaskStatus = (id:string, status:string) => setTasks(ts=>ts.map(t=>t.id===id?{...t,status}:t));
-
-  const toggleDone = (id:string) => setTasks(ts=>ts.map(t=>t.id===id?{...t,status:t.status==="Done"?"Todo":"Done"}:t));
-  const filtered = filter==="All"?tasks:tasks.filter(t=>t.status===filter);
-
-  const priorityColor: Record<string,string> = { High:"text-red-600 bg-red-50", Medium:"text-amber-600 bg-amber-50", Low:"text-gray-500 bg-gray-100" };
-  const statusColor: Record<string,string> = { Todo:"text-gray-500 bg-gray-100", "In Progress":"text-blue-600 bg-blue-50", Done:"text-green-700 bg-green-50" };
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 pt-5 pb-0">
-        <div className="flex items-center justify-between mb-4">
-          <div><h1 className="text-lg font-semibold text-gray-900">Tasks</h1><p className="text-sm text-gray-500 mt-0.5">{tasks.filter(t=>t.status!=="Done").length} open · {tasks.filter(t=>t.status==="Done").length} completed</p></div>
-          <Btn onClick={()=>setShowCreate(true)}><Plus size={14}/>Create Task</Btn>
-        </div>
-        <div className="flex items-center gap-1 pb-3">
-          {["All","Todo","In Progress","Done"].map(f=>(
-            <button key={f} onClick={()=>setFilter(f)} className={cn("px-3 py-1.5 text-xs font-medium rounded-lg transition-colors",filter===f?"bg-[#5C5CFF] text-white":"text-gray-600 hover:bg-gray-100")}>{f}</button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-auto p-6">
-        <div className="bg-white rounded-lg border border-gray-200">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>{["Task","Assignee","Department","Priority","Due Date","Status",""].map(h=><th key={h} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map(t=>(
-                <tr key={t.id} className={cn("hover:bg-gray-50 transition-colors",t.status==="Done"&&"opacity-60")}>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <input type="checkbox" checked={t.status==="Done"} onChange={()=>toggleDone(t.id)} className="rounded border-gray-300 accent-[#5C5CFF] flex-shrink-0"/>
-                      <span className={cn("font-medium text-gray-800",t.status==="Done"&&"line-through text-gray-400")}>{t.title}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <Avt initials={t.assignee.split(" ").map(n=>n[0]).join("")} color={EMP_COLORS[parseInt(t.id.slice(-1))%EMP_COLORS.length]} size="sm"/>
-                      <span className="text-gray-600 text-xs">{t.assignee}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3 text-gray-500 text-xs">{t.dept}</td>
-                  <td className="px-5 py-3"><span className={cn("px-2 py-0.5 rounded text-xs font-medium",priorityColor[t.priority])}>{t.priority}</span></td>
-                  <td className="px-5 py-3 text-gray-500 text-xs">{t.due}</td>
-                  <td className="px-5 py-3"><span className={cn("px-2 py-0.5 rounded text-xs font-medium",statusColor[t.status])}>{t.status}</span></td>
-                  <td className="px-5 py-3 relative">
-                    <button onClick={()=>setTaskMenu(taskMenu===t.id?null:t.id)} className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"><MoreHorizontal size={14}/></button>
-                    {taskMenu===t.id&&(
-                      <div className="absolute right-5 top-full z-30 mt-1 w-44 bg-white rounded-xl border border-gray-200 shadow-lg py-1" onClick={()=>setTaskMenu(null)}>
-                        <button onClick={()=>setTaskStatus(t.id,"In Progress")} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Play size={11} className="text-blue-500"/>Mark In Progress</button>
-                        <button onClick={()=>setTaskStatus(t.id,"Done")} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"><CheckCircle size={11} className="text-green-500"/>Mark Done</button>
-                        <button onClick={()=>setTaskStatus(t.id,"Todo")} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Circle size={11} className="text-gray-400"/>Reset to Todo</button>
-                        <div className="border-t border-gray-100 my-1"/>
-                        <button onClick={()=>deleteTask(t.id)} className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"><Trash2 size={11}/>Delete Task</button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {showCreate&&(
-        <Modal title="Create Task" onClose={()=>setShowCreate(false)}>
-          <div className="space-y-4">
-            <InputField label="Task Title" placeholder="Describe the task…" required/>
-            <SelectField label="Assignee" options={["Alex Admin","Aisha Thompson","David Chen","Jennifer Walsh","Marcus Johnson"]}/>
-            <div className="grid grid-cols-2 gap-4">
-              <SelectField label="Priority" options={["High","Medium","Low"]}/>
-              <InputField label="Due Date" type="date"/>
-            </div>
-            <SelectField label="Department" options={["HR","Engineering","Finance","Marketing","Sales","Design","Legal","Operations"]}/>
-            <InputField label="Description" placeholder="Optional notes…"/>
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-              <Btn variant="outline" onClick={()=>setShowCreate(false)}>Cancel</Btn>
-              <Btn onClick={()=>setShowCreate(false)}><Check size={14}/>Create Task</Btn>
-            </div>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
-}
 
 // ── App Root ───────────────────────────────────────────────────────────────────
 export default function App() {
@@ -4406,6 +4064,7 @@ export default function App() {
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showCreateAnnouncement, setShowCreateAnnouncement] = useState(false);
+  const [showCreateDiscussion, setShowCreateDiscussion] = useState(false);
   const [showUploadDoc, setShowUploadDoc] = useState(false);
   const [showNewDoc, setShowNewDoc] = useState(false);
 
@@ -4712,34 +4371,7 @@ export default function App() {
         </>
       );
     } else if (teamTab === "Feed") {
-      headerToolbar = (
-        <>
-          <div className="relative w-64 h-[38px] flex items-center gap-2 px-3 bg-[#F6F7F9] border border-[#E8E9ED] rounded-[9px]">
-            <Search size={14} className="text-[#9CA0AB] flex-shrink-0" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={teamSearch}
-              onChange={(e) => setTeamSearch(e.target.value)}
-              className="w-full bg-transparent text-[13px] text-[#16181D] placeholder-[#9CA0AB] outline-none"
-            />
-          </div>
-          <div className="flex-1" />
-          <button
-            onClick={() => setShowTeamFilter(true)}
-            className="h-10 w-10 flex items-center justify-center p-0 rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] hover:bg-gray-50 transition-colors"
-          >
-            <SlidersHorizontal size={16} />
-          </button>
-          <button
-            onClick={() => setShowCreatePost(v => !v)}
-            className="h-10 px-[18px] rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] text-[14px] font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors"
-          >
-            <Plus size={16} strokeWidth={2.2} />
-            Create Post
-          </button>
-        </>
-      );
+      headerToolbar = null;
     } else if (teamTab === "Announcements") {
       headerToolbar = (
         <>
@@ -4962,6 +4594,10 @@ export default function App() {
             } else if (action === "policy") {
               navigate("organization");
               setOrgSection("Management");
+            } else if (action === "discussion") {
+              navigate("team");
+              setTeamTab("Feed");
+              setShowCreateDiscussion(true);
             }
           }}
           onSearchResultClick={(category, item) => {
@@ -4998,7 +4634,7 @@ export default function App() {
         />
         <main className="flex-1 overflow-auto bg-[#F7F8FA]">
           {page==="my-space"&&<MySpacePage navigate={navigate} activeTab={mySpaceTab}/>}
-          {page==="team"&&<TeamPage navigate={navigate} activeTab={teamTab} search={teamSearch} showCreatePost={showCreatePost} setShowCreatePost={setShowCreatePost} showCreateAnnouncement={showCreateAnnouncement} setShowCreateAnnouncement={setShowCreateAnnouncement} showCreateTask={showCreateTask} setShowCreateTask={setShowCreateTask} reporteesViewMode={reporteesViewMode} showTeamFilter={showTeamFilter} setShowTeamFilter={setShowTeamFilter} deptFilter={teamDeptFilter} setDeptFilter={setTeamDeptFilter} locationFilter={teamLocationFilter} setLocationFilter={setTeamLocationFilter}/>}
+          {page==="team"&&<TeamPage navigate={navigate} activeTab={teamTab} search={teamSearch} showCreatePost={showCreatePost} setShowCreatePost={setShowCreatePost} showCreateAnnouncement={showCreateAnnouncement} setShowCreateAnnouncement={setShowCreateAnnouncement} showCreateTask={showCreateTask} setShowCreateTask={setShowCreateTask} reporteesViewMode={reporteesViewMode} showTeamFilter={showTeamFilter} setShowTeamFilter={setShowTeamFilter} deptFilter={teamDeptFilter} setDeptFilter={setTeamDeptFilter} locationFilter={teamLocationFilter} setLocationFilter={setTeamLocationFilter} showCreateDiscussion={showCreateDiscussion} setShowCreateDiscussion={setShowCreateDiscussion}/>}
           {page==="organization"&&<OrganizationPage navigate={navigate} onSelectEmployee={e=>navigate("employee-profile",e)} activeTab={orgTab} onTabChange={setOrgTab} showTeamFilter={showTeamFilter} setShowTeamFilter={setShowTeamFilter} search={orgSearch}/>}
           {page==="attendance"&&<AttendancePage navigate={navigate} section={attendanceSection} onSectionChange={setAttendanceSection} activeTab={attendanceTab}/>}
           {page==="leave"&&<LeavePage navigate={navigate} section={leaveSection} onSectionChange={setLeaveSection} activeTab={leaveTab}/>}

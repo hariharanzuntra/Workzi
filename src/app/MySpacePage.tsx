@@ -18,7 +18,7 @@ import {
   PieChart, Pie, Legend
 } from "recharts";
 import { AppPage, EMP_COLORS, LEAVE_REQUESTS, cn, fmtDate } from "./data";
-import { Avt, StatusBadge, Btn, Modal, SelectField, InputField } from "./ui";
+import { Avt, StatusBadge, Btn, Modal, SelectField, InputField, Drawer } from "./ui";
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 interface AppComment {
@@ -629,7 +629,7 @@ export function MySpacePage({
       <div className="flex-1 overflow-auto">
 
         {/* ════════════════════ DASHBOARD ════════════════════ */}
-        {tab === "Dashboard" && annView === "widget" && !annDetailId && (
+        {tab === "Dashboard" && annView === "widget" && (
           <div className="px-4 py-3.5 space-y-3 max-w-5xl mx-auto">
 
             {/* Greeting */}
@@ -887,7 +887,7 @@ export function MySpacePage({
         )}
 
         {/* ════════════════════ ANNOUNCEMENTS LIST (from Dashboard) ════════════════════ */}
-        {tab === "Dashboard" && annView === "list" && !annDetailId && (
+        {tab === "Dashboard" && annView === "list" && (
           <div className="flex flex-col h-full">
             <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3 flex-shrink-0">
               <button onClick={()=>setAnnView("widget")} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700"><ChevronLeft size={14}/>Dashboard</button>
@@ -949,50 +949,127 @@ export function MySpacePage({
           </div>
         )}
 
-        {/* ════════════════════ ANNOUNCEMENT DETAIL (from Dashboard) ════════════════════ */}
-        {tab === "Dashboard" && annDetailId && annDetail && (
-          <div className="flex flex-col h-full">
-            <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3 flex-shrink-0">
-              <button onClick={()=>{setAnnDetailId(null);setAnnView(annView==="list"?"list":"widget");}} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700"><ChevronLeft size={14}/>{annView==="list"?"Announcements":"Dashboard"}</button>
-              <div className="ml-auto flex items-center gap-2">
-                <button onClick={()=>setAnnPinnedIds(p=>p.includes(annDetail.id)?p.filter(x=>x!==annDetail.id):[...p,annDetail.id])} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors",annPinnedIds.includes(annDetail.id)?"border-amber-300 bg-amber-50 text-amber-700":"border-gray-200 text-gray-500 hover:bg-gray-50")}><Pin size={12}/>{annPinnedIds.includes(annDetail.id)?"Pinned":"Pin"}</button>
-                <button onClick={()=>setAnnBookmarks(b=>b.includes(annDetail.id)?b.filter(x=>x!==annDetail.id):[...b,annDetail.id])} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors",annBookmarks.includes(annDetail.id)?"border-[#5C5CFF] bg-[#EEF2FF] text-[#5C5CFF]":"border-gray-200 text-gray-500 hover:bg-gray-50")}><Bookmark size={12}/>{annBookmarks.includes(annDetail.id)?"Saved":"Save"}</button>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-500 hover:bg-gray-50"><Share2 size={12}/>Share</button>
+        {/* Contextual Overlay Drawer for Dashboard Announcement details */}
+        <Drawer
+          isOpen={tab === "Dashboard" && !!annDetailId && !!annDetail}
+          onClose={() => { setAnnDetailId(null); setAnnView(annView === "list" ? "list" : "widget"); }}
+          title={annDetail?.title || "Announcement Details"}
+          avatar={
+            annDetail ? (
+              <Avt initials={annDetail.author.split(" ").map(n => n[0]).join("")} color="#5C5CFF" size="md" />
+            ) : null
+          }
+          headerAddon={
+            annDetail ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setAnnPinnedIds(p => p.includes(annDetail.id) ? p.filter(x => x !== annDetail.id) : [...p, annDetail.id])}
+                  className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-semibold transition-colors", annPinnedIds.includes(annDetail.id) ? "border-amber-300 bg-amber-50 text-amber-700" : "border-gray-200 text-gray-500 hover:bg-gray-50")}
+                >
+                  <Pin size={10} />
+                  {annPinnedIds.includes(annDetail.id) ? "Pinned" : "Pin"}
+                </button>
+                <button
+                  onClick={() => setAnnBookmarks(b => b.includes(annDetail.id) ? b.filter(x => x !== annDetail.id) : [...b, annDetail.id])}
+                  className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-semibold transition-colors", annBookmarks.includes(annDetail.id) ? "border-[#5C5CFF] bg-[#EEF2FF] text-[#5C5CFF]" : "border-gray-200 text-gray-500 hover:bg-gray-50")}
+                >
+                  <Bookmark size={10} />
+                  {annBookmarks.includes(annDetail.id) ? "Saved" : "Save"}
+                </button>
               </div>
-            </div>
-            <div className="flex-1 overflow-auto">
-              <div className="max-w-2xl mx-auto px-6 py-6 space-y-5">
-                <div className={cn("h-28 rounded-2xl flex items-center justify-center",annDetail.priority==="High"?"bg-[#5C5CFF]":"bg-gradient-to-br from-amber-400 to-orange-500")}>
-                  <div className="text-center">{annDetail.category==="Event"?<CalendarDays size={32} className="text-white/70 mx-auto mb-1"/>:annDetail.category==="Policy"?<FileText size={32} className="text-white/70 mx-auto mb-1"/>:<Megaphone size={32} className="text-white/70 mx-auto mb-1"/>}<span className="text-white/80 text-xs font-medium uppercase tracking-wider">{annDetail.category}</span></div>
+            ) : null
+          }
+          footer={
+            <Btn variant="outline" onClick={() => { setAnnDetailId(null); setAnnView(annView === "list" ? "list" : "widget"); }}>Close Details</Btn>
+          }
+        >
+          {annDetail && (
+            <div className="space-y-6 text-left">
+              {/* Banner/Priority widget */}
+              <div className={cn("h-28 rounded-2xl flex items-center justify-center shadow-inner", annDetail.priority === "High" ? "bg-[#5C5CFF]" : "bg-gradient-to-br from-amber-400 to-orange-500")}>
+                <div className="text-center">
+                  {annDetail.category === "Event" ? <CalendarDays size={32} className="text-white/70 mx-auto mb-1" /> : annDetail.category === "Policy" ? <FileText size={32} className="text-white/70 mx-auto mb-1" /> : <Megaphone size={32} className="text-white/70 mx-auto mb-1" />}
+                  <span className="text-white/80 text-xs font-semibold uppercase tracking-wider">{annDetail.category}</span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-2"><span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full",annDetail.priority==="High"?"bg-red-100 text-red-600":"bg-amber-100 text-amber-600")}>{annDetail.priority} Priority</span><span className="text-[10px] text-gray-400">{annDetail.audience}</span></div>
-                  <h1 className="text-xl font-semibold text-gray-900 mb-3">{annDetail.title}</h1>
-                  <div className="flex items-center gap-3"><Avt initials={annDetail.author.split(" ").map(n=>n[0]).join("")} color="#5C5CFF" size="sm"/><div><p className="text-sm font-medium text-gray-800">{annDetail.author}</p><p className="text-xs text-gray-400">Published {annDetail.timeAgo} · {annDetail.readCount} reads</p></div></div>
+              </div>
+
+              {/* Publisher info card */}
+              <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-4">
+                <div className="flex items-center gap-3">
+                  <Avt initials={annDetail.author.split(" ").map(n => n[0]).join("")} color="#5C5CFF" size="sm" />
+                  <div>
+                    <p className="text-xs font-bold text-gray-800">{annDetail.author}</p>
+                    <p className="text-[10px] text-gray-400">Published {annDetail.timeAgo} · {annDetail.readCount} reads</p>
+                  </div>
+                  <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto", annDetail.priority === "High" ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600")}>{annDetail.priority} Priority</span>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-5">{annDetail.body.split("\n").map((line,i)=><p key={i} className={cn("text-sm text-gray-700 leading-relaxed",line.startsWith("•")?"ml-3 mt-1":line===""?"my-1.5":"mb-2",line.trim().endsWith(":")&&"font-semibold text-gray-900 mt-3")}>{line}</p>)}</div>
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-gray-700 mb-3">Reactions</p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {["👍","❤️","🎉","😮","👏"].map(emoji=>{
-                      const count=(annReactions[annDetail.id]||[]).filter(r=>r===emoji).length;
-                      return <button key={emoji} onClick={()=>setAnnReactions(ar=>({...ar,[annDetail.id]:[...(ar[annDetail.id]||[]),emoji]}))} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm hover:scale-105 transition-all",count>0?"border-[#5C5CFF]/30 bg-[#EEF2FF] text-[#5C5CFF]":"border-gray-200 hover:border-gray-300")}>{emoji}<span className="text-xs font-medium">{count||""}</span></button>;
-                    })}
+              </div>
+
+              {/* Body Content */}
+              <div className="bg-white border border-gray-150 rounded-xl p-5 shadow-sm">
+                <div className="space-y-2">
+                  {annDetail.body.split("\n").map((line, i) => (
+                    <p key={i} className={cn("text-xs text-gray-700 leading-relaxed", line.startsWith("•") ? "ml-3 mt-1" : line === "" ? "my-1.5" : "mb-2", line.trim().endsWith(":") && "font-bold text-gray-900 mt-3")}>
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              </div>
+
+              {/* Reactions Widget */}
+              <div className="bg-white border border-gray-150 rounded-xl p-4 shadow-sm">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Reactions</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {["👍", "❤️", "🎉", "😮", "👏"].map(emoji => {
+                    const count = (annReactions[annDetail.id] || []).filter(r => r === emoji).length;
+                    return (
+                      <button
+                        key={emoji}
+                        onClick={() => setAnnReactions(ar => ({ ...ar, [annDetail.id]: [...(ar[annDetail.id] || []), emoji] }))}
+                        className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs hover:scale-105 transition-all", count > 0 ? "border-[#5C5CFF]/30 bg-[#EEF2FF] text-[#5C5CFF] font-semibold" : "border-gray-200 hover:border-gray-300")}
+                      >
+                        {emoji}
+                        <span>{count || ""}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Comments Section */}
+              <div className="bg-white border border-gray-150 rounded-xl p-4 shadow-sm space-y-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Comments</p>
+                <div className="space-y-3">
+                  {[{ author: "Sarah Mitchell", text: "Thank you for sharing! Looking forward to the all-hands.", time: "2 hours ago", color: "#22C55E" }, { author: "Marcus Johnson", text: "Can we get a recording link after the meeting?", time: "1 hour ago", color: "#F59E0B" }].map((c, i) => (
+                    <div key={i} className="flex gap-2.5">
+                      <Avt initials={c.author.split(" ").map(n => n[0]).join("")} color={c.color} size="xs" />
+                      <div className="flex-1 bg-gray-50 rounded-lg p-2.5 text-xs">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-gray-800">{c.author}</span>
+                          <span className="text-[9px] text-gray-400">{c.time}</span>
+                        </div>
+                        <p className="text-gray-700 leading-relaxed">{c.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2 pt-2 border-t border-gray-100">
+                  <Avt initials="AA" color="#5C5CFF" size="xs" />
+                  <div className="flex-1 flex gap-1.5">
+                    <input
+                      type="text"
+                      value={annComment}
+                      onChange={e => setAnnComment(e.target.value)}
+                      placeholder="Add a comment…"
+                      className="flex-1 px-3 py-1.5 text-xs border border-gray-205 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C5CFF] bg-gray-50"
+                    />
+                    <button onClick={() => setAnnComment("")} className="px-2.5 py-1.5 bg-[#5C5CFF] text-white rounded-lg hover:bg-[#4A4AE0] transition-colors"><Send size={12} /></button>
                   </div>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-gray-700 mb-3">Comments</p>
-                  <div className="space-y-3 mb-3">
-                    {[{author:"Sarah Mitchell",text:"Thank you for sharing! Looking forward to the all-hands.",time:"2 hours ago",color:"#22C55E"},{author:"Marcus Johnson",text:"Can we get a recording link after the meeting?",time:"1 hour ago",color:"#F59E0B"}].map((c,i)=>(
-                      <div key={i} className="flex gap-2.5"><Avt initials={c.author.split(" ").map(n=>n[0]).join("")} color={c.color} size="xs"/><div className="flex-1 bg-gray-50 rounded-lg p-2.5"><div className="flex items-center justify-between mb-1"><span className="text-xs font-semibold text-gray-800">{c.author}</span><span className="text-[10px] text-gray-400">{c.time}</span></div><p className="text-xs text-gray-700">{c.text}</p></div></div>
-                    ))}
-                  </div>
-                  <div className="flex gap-2"><Avt initials="AA" color="#5C5CFF" size="xs"/><div className="flex-1 flex gap-1.5"><input value={annComment} onChange={e=>setAnnComment(e.target.value)} placeholder="Add a comment…" className="flex-1 px-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C5CFF] bg-gray-50"/><button onClick={()=>setAnnComment("")} className="px-2.5 py-1.5 bg-[#5C5CFF] text-white rounded-lg hover:bg-[#4A4AE0]"><Send size={12}/></button></div></div>
-                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </Drawer>
 
         {/* ════════════════════ ATTENDANCE ════════════════════ */}
         {tab === "Attendance" && (
@@ -2197,63 +2274,114 @@ export function MySpacePage({
                 </div>
 
                 {/* Leave Detail Drawer */}
-                {leaveDetailId2 && (() => {
-                  const lr = myLeaveHist.find(r=>r.id===leaveDetailId2);
-                  if (!lr) return null;
-                  return (
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                      <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-gray-800">Leave Details</h3>
-                        <button onClick={()=>setLeaveDetailId2(null)}><X size={14} className="text-gray-400 hover:text-gray-600"/></button>
-                      </div>
-                      <div className="p-5 grid grid-cols-2 gap-5">
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
-                            <div className="w-10 h-10 rounded-xl bg-[#EEF2FF] flex items-center justify-center flex-shrink-0"><CalendarDays size={18} className="text-[#5C5CFF]"/></div>
-                            <div><p className="text-sm font-semibold text-gray-800">{lr.type}</p><p className="text-[10px] text-gray-400">{lr.from} → {lr.to} · {lr.days} working days</p></div>
-                            <StatusBadge status={lr.status}/>
-                          </div>
-                          {([["Applied on",lr.applied],["Approver",lr.approver],["Reason",lr.reason]] as [string,string][]).map(([k,v])=>(
-                            <div key={k}><p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">{k}</p><p className="text-xs text-gray-700">{v}</p></div>
-                          ))}
-                          {lr.status==="Rejected"&&lr.rejectReason&&(
-                            <div className="bg-red-50 border border-red-100 rounded-xl p-3">
-                              <p className="text-[10px] font-semibold text-red-600 uppercase tracking-wide mb-1">Rejection Reason</p>
-                              <p className="text-xs text-red-700">{lr.rejectReason}</p>
+                <Drawer
+                  isOpen={!!leaveDetailId2}
+                  onClose={() => setLeaveDetailId2(null)}
+                  title="Leave Details"
+                  avatar={
+                    <div className="w-10 h-10 rounded-xl bg-[#EEF2FF] flex items-center justify-center flex-shrink-0">
+                      <CalendarDays size={18} className="text-[#5C5CFF]" />
+                    </div>
+                  }
+                  headerAddon={
+                    (() => {
+                      const lr = myLeaveHist.find(r => r.id === leaveDetailId2);
+                      return lr ? <StatusBadge status={lr.status} /> : null;
+                    })()
+                  }
+                  footer={
+                    <Btn variant="outline" onClick={() => setLeaveDetailId2(null)}>Close Details</Btn>
+                  }
+                >
+                  {(() => {
+                    const lr = myLeaveHist.find(r => r.id === leaveDetailId2);
+                    if (!lr) return null;
+                    return (
+                      <div className="space-y-6 text-left">
+                        {/* Key Info Cards */}
+                        <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-4">
+                          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Leave Information</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Leave Type</p>
+                              <p className="text-xs font-semibold text-gray-805 mt-1">{lr.type}</p>
                             </div>
-                          )}
-                          {lr.attachment&&<div className="flex items-center gap-2 text-xs text-[#5C5CFF]"><FileText size={12}/>Supporting document attached</div>}
+                            <div>
+                              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Duration</p>
+                              <p className="text-xs font-semibold text-gray-805 mt-1">{lr.days} working days</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Date Range</p>
+                              <p className="text-xs font-semibold text-gray-855 mt-1">{lr.from} – {lr.to}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Applied On</p>
+                              <p className="text-xs font-semibold text-gray-855 mt-1">{lr.applied}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Approver</p>
+                              <p className="text-xs font-semibold text-gray-855 mt-1">{lr.approver}</p>
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-3">
-                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Approval Timeline</p>
+
+                        {/* Reason */}
+                        <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-2">
+                          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Reason</h4>
+                          <p className="text-xs text-gray-750 leading-relaxed font-medium">{lr.reason}</p>
+                        </div>
+
+                        {lr.status === "Rejected" && lr.rejectReason && (
+                          <div className="bg-red-50 border border-red-150 rounded-xl p-4 space-y-2">
+                            <h4 className="text-xs font-bold text-red-655 uppercase tracking-wider">Rejection Reason</h4>
+                            <p className="text-xs text-red-750 leading-relaxed font-semibold">{lr.rejectReason}</p>
+                          </div>
+                        )}
+
+                        {lr.attachment && (
+                          <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-3">
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Attachments</h4>
+                            <div className="flex items-center gap-2 text-xs text-[#5C5CFF] font-semibold">
+                              <FileText size={14} />
+                              <span>Supporting document attached</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Timeline */}
+                        <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-3.5">
+                          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Approval Timeline</h4>
                           <div className="space-y-3">
                             {[
-                              {t:"Request submitted",d:lr.applied,c:"#5C5CFF"},
-                              {t:`Assigned to ${lr.approver}`,d:lr.applied,c:"#F59E0B"},
-                              ...(lr.status==="Approved"
-                                ? [{t:"Approved",d:"Auto-processed",c:"#22C55E"}]
-                                :lr.status==="Rejected"
-                                ? [{t:"Rejected",d:"Manual review",c:"#EF4444"}]
-                                : [{t:"Awaiting approval",d:"Pending",c:"#9CA3AF"}]
+                              { t: "Request submitted", d: lr.applied, c: "#5C5CFF" },
+                              { t: `Assigned to ${lr.approver}`, d: lr.applied, c: "#F59E0B" },
+                              ...(lr.status === "Approved"
+                                ? [{ t: "Approved", d: "Auto-processed", c: "#22C55E" }]
+                                : lr.status === "Rejected"
+                                ? [{ t: "Rejected", d: "Manual review", c: "#EF4444" }]
+                                : [{ t: "Awaiting approval", d: "Pending", c: "#9CA3AF" }]
                               ),
-                            ].map((step,i)=>(
+                            ].map((step, i) => (
                               <div key={i} className="flex items-start gap-3">
-                                <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{backgroundColor:step.c}}/>
-                                <div><p className="text-xs font-medium text-gray-700">{step.t}</p><p className="text-[10px] text-gray-400">{step.d}</p></div>
+                                <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: step.c }} />
+                                <div className="text-left">
+                                  <p className="text-xs font-semibold text-gray-700">{step.t}</p>
+                                  <p className="text-[10px] text-gray-400">{step.d}</p>
+                                </div>
                               </div>
                             ))}
                           </div>
-                          {lr.comment&&(
-                            <div className="mt-3 bg-gray-50 rounded-xl p-3">
-                              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Approver Comment</p>
+                          {lr.comment && (
+                            <div className="mt-3 bg-gray-50 rounded-lg p-3 text-left border border-gray-150">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Approver Comment</p>
                               <p className="text-xs text-gray-600 italic">"{lr.comment}"</p>
                             </div>
                           )}
                         </div>
                       </div>
-                    </div>
-                  );
-                })()}
+                    );
+                  })()}
+                </Drawer>
               </>)}
 
               {/* ── REQUESTS ── */}
@@ -3075,24 +3203,72 @@ export function MySpacePage({
         ) : null;
       })()}
 
-      {/* ── Leave Detail Modal ── */}
-      {leaveDetailId && (() => {
-        const req = MY_LEAVE_HIST.find(r => r.id === leaveDetailId) || reqs.find(r => r.id === leaveDetailId) as any;
-        return req ? (
-          <Modal title="Leave Request Details" onClose={() => setLeaveDetailId(null)} width="max-w-2xl">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200"><Avt initials="AA" color="#5C5CFF" size="md"/><div><p className="text-sm font-semibold text-gray-900">Alex Admin</p><p className="text-xs text-gray-500">Administrator · Administration</p></div><StatusBadge status={req.status} className="ml-auto"/></div>
-              <div className="grid grid-cols-3 gap-3">{([["Leave Type",req.type],["From",req.from],["To",req.to],["Days",String(req.days)+" days"],["Applied",req.applied],["Status",req.status]] as [string,string][]).map(([k,v]) => <div key={k} className="bg-white border border-gray-200 rounded-lg p-3"><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{k}</p><p className="text-sm font-semibold text-gray-800">{v}</p></div>)}</div>
-              <div className="flex gap-3 pt-2 border-t border-gray-200">
+      {/* ── Leave Detail Drawer ── */}
+      <Drawer
+        isOpen={!!leaveDetailId}
+        onClose={() => setLeaveDetailId(null)}
+        title="Leave Request Details"
+        avatar={<Avt initials="AA" color="#5C5CFF" size="md"/>}
+        headerAddon={
+          (() => {
+            const req = MY_LEAVE_HIST.find(r => r.id === leaveDetailId) || reqs.find(r => r.id === leaveDetailId) as any;
+            return req ? <StatusBadge status={req.status} /> : null;
+          })()
+        }
+        footer={
+          (() => {
+            const req = MY_LEAVE_HIST.find(r => r.id === leaveDetailId) || reqs.find(r => r.id === leaveDetailId) as any;
+            if (!req) return null;
+            return (
+              <>
                 <Btn variant="outline"><Download size={13}/>Download</Btn>
                 <Btn variant="outline"><Printer size={13}/>Print</Btn>
                 <div className="flex-1"/>
-                {req.status==="Pending"&&<><Btn onClick={()=>{setApproveModalId(req.id);setLeaveDetailId(null);}} className="bg-green-600 hover:bg-green-700"><Check size={13}/>Approve</Btn><Btn onClick={()=>{setRejectModalId(req.id);setLeaveDetailId(null);}} variant="outline" className="border-red-200 text-red-600 hover:bg-red-50"><X size={13}/>Reject</Btn></>}
+                {req.status==="Pending"&&(
+                  <>
+                    <Btn onClick={()=>{setApproveModalId(req.id);setLeaveDetailId(null);}} className="bg-green-600 hover:bg-green-700"><Check size={13}/>Approve</Btn>
+                    <Btn onClick={()=>{setRejectModalId(req.id);setLeaveDetailId(null);}} variant="outline" className="border-red-200 text-red-600 hover:bg-red-50"><X size={13}/>Reject</Btn>
+                  </>
+                )}
+              </>
+            );
+          })()
+        }
+      >
+        {(() => {
+          const req = MY_LEAVE_HIST.find(r => r.id === leaveDetailId) || reqs.find(r => r.id === leaveDetailId) as any;
+          if (!req) return null;
+          return (
+            <div className="space-y-6 text-left">
+              <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-4">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Leave Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Leave Type</p>
+                    <p className="text-xs font-semibold text-gray-805 mt-1">{req.type}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Total Days</p>
+                    <p className="text-xs font-semibold text-gray-805 mt-1">{req.days} days</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Start Date</p>
+                    <p className="text-xs font-semibold text-gray-855 mt-1">{req.from}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">End Date</p>
+                    <p className="text-xs font-semibold text-gray-855 mt-1">{req.to}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Applied Date</p>
+                    <p className="text-xs font-semibold text-gray-855 mt-1">{req.applied}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </Modal>
-        ) : null;
-      })()}
+          );
+        })()}
+      </Drawer>
 
       {/* ── Approve Leave Modal ── */}
       {approveModalId && (() => {

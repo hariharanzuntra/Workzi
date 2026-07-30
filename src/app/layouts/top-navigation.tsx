@@ -4,8 +4,11 @@ import {
   UserPlus, Building2, Clock, CheckCircle, Calendar, Gift, Megaphone, ClipboardList,
   FileText, X, Bookmark, History, LayoutDashboard, Database, Info, Key, FileBarChart, Play, MessageSquare
 } from "lucide-react";
-import { cn, EMPLOYEES, DEPT_DIST, DOCUMENTS_LIST } from "./data";
-import { Avt } from "./ui";
+import { cn } from "@/shared/utils";
+import { EMPLOYEES } from "@/modules/organization/data/employees";
+import { DEPT_DIST } from "@/modules/organization/data/analytics";
+import { DOCUMENTS_LIST } from "@/modules/documents/data/documents-list";
+import { Avt } from "@/shared/components";
 
 // Reusable Segmented Control Component
 export function SegmentedControl<T extends string>({
