@@ -8,8 +8,12 @@ import {
   Bot, ClipboardList, ToggleLeft, ToggleRight, Filter, ExternalLink,
   ChevronDown, Star, Award, User, Phone, Briefcase
 } from "lucide-react";
-import { cn, fmtDate, Employee, EMPLOYEES, DEPT_DIST, EMP_COLORS } from "./data";
-import { Avt, StatusBadge, Btn, Modal, InputField, SelectField, TabBar } from "./ui";
+import { cn, fmtDate } from "@/shared/utils";
+import { Employee } from "@/shared/types";
+import { EMPLOYEES } from "@/modules/organization/data/employees";
+import { DEPT_DIST } from "@/modules/organization/data/analytics";
+import { EMP_COLORS } from "@/shared/constants/colors";
+import { Avt, StatusBadge, Btn, Modal, InputField, SelectField, TabBar } from "@/shared/components";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type MASection = "Users"|"Organization Setup"|"User Access Control"|"Manage Services"|"Automation"|"Approvals"|"Audit Logs";

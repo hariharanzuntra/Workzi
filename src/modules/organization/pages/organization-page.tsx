@@ -11,12 +11,15 @@ import {
   AreaChart, Area, BarChart as RBarChart, Bar, LineChart as RLineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-import {
-  cn, fmtDate, AppPage, Employee,
-  EMPLOYEES, DEPT_DIST, ATT_TREND, HEADCOUNT_TREND, LEAVE_MONTHLY, DOCUMENTS_LIST, EMP_COLORS,
-  ATTENDANCE_RECORDS
-} from "./data";
-import { Avt, StatusBadge, Btn, KPICard, Modal, TabBar, InputField, SelectField } from "./ui";
+import { cn, fmtDate } from "@/shared/utils";
+import { AppPage, Employee } from "@/shared/types";
+import { EMPLOYEES } from "@/modules/organization/data/employees";
+import { DEPT_DIST, HEADCOUNT_TREND } from "@/modules/organization/data/analytics";
+import { ATT_TREND, ATTENDANCE_RECORDS } from "@/modules/attendance/data/attendance-records";
+import { LEAVE_MONTHLY } from "@/modules/leave/data/leave-requests";
+import { DOCUMENTS_LIST } from "@/modules/documents/data/documents-list";
+import { EMP_COLORS } from "@/shared/constants/colors";
+import { Avt, StatusBadge, Btn, KPICard, Modal, TabBar, InputField, SelectField } from "@/shared/components";
 
 export function OrgEmpWorkspace({ emp, onClose, onAction }: { emp: Employee; onClose: ()=>void; onAction: (a:string)=>void }) {
   const [wsTab, setWsTab] = useState("Overview");

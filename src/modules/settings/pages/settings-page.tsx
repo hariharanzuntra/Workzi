@@ -17,7 +17,7 @@ import {
   SelectField,
   PageHeader,
 } from "@/shared/components";
-import { ManageAccountPage } from "@/app/ManageAccount";
+import { ManageAccountPage } from "./manage-account-page";
 
 export function SettingsPage({ navigate }: { navigate: (p: AppPage) => void }) {
   const [section, setSection] = useState("General");

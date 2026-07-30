@@ -17,8 +17,11 @@ import {
   AreaChart, Area, LineChart as RLineChart, Line,
   PieChart, Pie, Legend
 } from "recharts";
-import { AppPage, EMP_COLORS, LEAVE_REQUESTS, cn, fmtDate } from "./data";
-import { Avt, StatusBadge, Btn, Modal, SelectField, InputField, Drawer } from "./ui";
+import { AppPage } from "@/shared/types";
+import { cn, fmtDate } from "@/shared/utils";
+import { EMP_COLORS } from "@/shared/constants/colors";
+import { LEAVE_REQUESTS } from "@/modules/leave/data/leave-requests";
+import { Avt, StatusBadge, Btn, Modal, SelectField, InputField, Drawer } from "@/shared/components";
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 interface AppComment {
