@@ -31,6 +31,7 @@ import {
   InputField,
   SelectField,
 } from "@/shared/components";
+import { CustomAlertDialog } from "@/modules/tasks/components/discard-changes-dialog";
 
 export function EmployeeProfilePage({
   employee,
@@ -43,6 +44,7 @@ export function EmployeeProfilePage({
 }) {
   const [tab, setTab] = useState("Activities");
   const [showEdit, setShowEdit] = useState(false);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
 
   return (
@@ -278,15 +280,15 @@ export function EmployeeProfilePage({
                       key={label}
                       onClick={() => {
                         if (label === "Assign Task") {
-                          alert(
+                          setAlertMsg(
                             `Assign Task for ${employee.name} is handled in the Tasks module.`
                           );
                         } else if (label === "Assign Shift") {
-                          alert(
+                          setAlertMsg(
                             `Assign Shift for ${employee.name} is handled in the Shift Planner.`
                           );
                         } else if (label === "Send Message") {
-                          alert(
+                          setAlertMsg(
                             `Sending messages to ${employee.name} is handled in Team Feed.`
                           );
                         } else if (label === "View Attendance") {
@@ -294,11 +296,11 @@ export function EmployeeProfilePage({
                         } else if (label === "View Leave History") {
                           setTab("Leave");
                         } else if (label === "Download Profile") {
-                          alert(`Downloading profile for ${employee.name}...`);
+                          setAlertMsg(`Downloading profile for ${employee.name}...`);
                         } else if (label === "Edit Employee") {
                           setShowEdit(true);
                         } else if (label === "Deactivate Employee") {
-                          alert(`Deactivating employee ${employee.name}...`);
+                          setAlertMsg(`Deactivating employee ${employee.name}...`);
                         }
                       }}
                       className={cn(
@@ -523,6 +525,12 @@ export function EmployeeProfilePage({
           </div>
         </Modal>
       )}
+      <CustomAlertDialog
+        isOpen={!!alertMsg}
+        onClose={() => setAlertMsg(null)}
+        title="Employee Action"
+        description={alertMsg || ""}
+      />
     </div>
   );
 }

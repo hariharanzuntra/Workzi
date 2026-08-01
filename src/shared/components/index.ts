@@ -1,4 +1,4 @@
-export { Avt } from "./avatar/avatar";
+export { Avt, UserAvatar } from "./avatar/avatar";
 export { StatusBadge } from "./badge/badge";
 export { Btn } from "./button/button";
 export { KPICard } from "./card/card";

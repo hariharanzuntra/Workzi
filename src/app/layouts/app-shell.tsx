@@ -97,6 +97,113 @@ export function AppShell() {
   const [teamSearch, setTeamSearch] = useState<string>("");
   const [docsSearch, setDocsSearch] = useState<string>("");
 
+  const [tasks, setTasks] = useState<any[]>(() => {
+    const mySpaceTasks = [
+      {
+        id: "T001",
+        title: "Review Q2 attendance report",
+        assignee: "Alex Admin",
+        dept: "HR",
+        priority: "High",
+        due: "Jul 3, 2024",
+        dueDate: "2026-07-03",
+        status: "In Progress",
+      },
+      {
+        id: "T002",
+        title: "Update leave policy for FY2025",
+        assignee: "Aisha Thompson",
+        dept: "HR",
+        priority: "High",
+        due: "Jul 5, 2024",
+        dueDate: "2026-07-05",
+        status: "Todo",
+      },
+      {
+        id: "T003",
+        title: "Onboard 3 new engineering hires",
+        assignee: "David Chen",
+        dept: "Engineering",
+        priority: "Medium",
+        due: "Jul 8, 2024",
+        dueDate: "2026-07-08",
+        status: "Todo",
+      },
+      {
+        id: "T004",
+        title: "Prepare department headcount report",
+        assignee: "Jennifer Walsh",
+        dept: "Finance",
+        priority: "Medium",
+        due: "Jul 10, 2024",
+        dueDate: "2026-07-10",
+        status: "In Progress",
+      },
+      {
+        id: "T005",
+        title: "Configure geo-fence for Austin office",
+        assignee: "Alex Admin",
+        dept: "Operations",
+        priority: "Low",
+        due: "Jul 15, 2024",
+        dueDate: "2026-07-15",
+        status: "Todo",
+      },
+      {
+        id: "T006",
+        title: "Send welcome email to new joiners",
+        assignee: "Aisha Thompson",
+        dept: "HR",
+        priority: "Low",
+        due: "Jul 1, 2024",
+        dueDate: "2026-07-01",
+        status: "Done",
+      },
+      {
+        id: "T007",
+        title: "Audit access roles for Finance team",
+        assignee: "Alex Admin",
+        dept: "Security",
+        priority: "High",
+        due: "Jul 2, 2024",
+        dueDate: "2026-07-02",
+        status: "Done",
+      },
+    ];
+
+    const teamInit = [
+      { id: "TT1", title: "Review Sarah's leave documentation", assignee: "Alex Admin", dept: "HR", priority: "High", due: "Jul 3", dueDate: "2026-07-03", status: "In Progress" },
+      { id: "TT2", title: "Update onboarding checklist for Q3", assignee: "Aisha Thompson", dept: "HR", priority: "Medium", due: "Jul 8", dueDate: "2026-07-08", status: "Todo" },
+      { id: "TT3", title: "Schedule Q3 performance reviews", assignee: "David Chen", dept: "Engineering", priority: "Medium", due: "Jul 15", dueDate: "2026-07-15", status: "Todo" },
+      { id: "TT4", title: "Send reminder – policy acknowledgement", assignee: "Alex Admin", dept: "HR", priority: "Low", due: "Jun 30", dueDate: "2026-06-30", status: "Todo" },
+      { id: "TT5", title: "Configure biometric for Chicago office", assignee: "Ahmad Patel", dept: "Operations", priority: "High", due: "Jul 5", dueDate: "2026-07-05", status: "In Progress" },
+      { id: "TT6", title: "Complete exit interview – Ahmad Patel", assignee: "Aisha Thompson", dept: "HR", priority: "High", due: "Jun 28", dueDate: "2026-06-28", status: "Done" },
+    ];
+
+    const combined = [...mySpaceTasks, ...teamInit].map((t) => ({
+      ...t,
+      createdAt: new Date().toISOString(),
+      originalEstimateMinutes: 0,
+      totalLoggedMinutes: 0,
+      remainingEstimateMinutes: 0,
+      comments: [],
+      workLogs: [],
+      activity: [
+        {
+          id: `act-init-${t.id}`,
+          taskId: t.id,
+          userId: "E004",
+          userName: "Alex Admin",
+          userInitials: "AA",
+          type: "create",
+          details: "created this task",
+          createdAt: new Date().toISOString()
+        }
+      ]
+    }));
+    return combined;
+  });
+
   // Modal / popups trigger states
   const [showAttFilter, setShowAttFilter] = useState(false);
   const [showLeaveFilter, setShowLeaveFilter] = useState(false);
@@ -109,6 +216,14 @@ export function AppShell() {
   const [showCreateDiscussion, setShowCreateDiscussion] = useState(false);
   const [showUploadDoc, setShowUploadDoc] = useState(false);
   const [showNewDoc, setShowNewDoc] = useState(false);
+
+  const [boardInsightsOpen, setBoardInsightsOpen] = useState(false);
+
+  useEffect(() => {
+    if (page !== "team" || teamTab !== "Tasks") {
+      setBoardInsightsOpen(false);
+    }
+  }, [page, teamTab]);
 
   const [attToast, setAttToast] = useState<string|null>(null);
   const attMsg = (m:string) => { setAttToast(m); setTimeout(()=>setAttToast(null),2500); };
@@ -178,6 +293,8 @@ export function AppShell() {
         setShowCreatePost={setShowCreatePost}
         showCreateAnnouncement={showCreateAnnouncement}
         setShowCreateAnnouncement={setShowCreateAnnouncement}
+        tasks={tasks}
+        setTasks={setTasks}
         showCreateTask={showCreateTask}
         setShowCreateTask={setShowCreateTask}
         reporteesViewMode={reporteesViewMode}
@@ -441,6 +558,18 @@ export function AppShell() {
             <SlidersHorizontal size={16} />
           </button>
           <button
+            onClick={() => setBoardInsightsOpen(v => !v)}
+            title="Board insights"
+            className={cn(
+              "h-10 w-10 flex items-center justify-center p-0 rounded-[10px] border transition-colors cursor-pointer",
+              boardInsightsOpen
+                ? "border-[#5C5CFF] bg-[#EEF2FF] text-[#5C5CFF]"
+                : "border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] hover:bg-gray-55"
+            )}
+          >
+            <TrendingUp size={16} />
+          </button>
+          <button
             onClick={() => setShowCreateTask(true)}
             className="h-10 px-[18px] rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] text-[14px] font-semibold flex items-center gap-2 hover:bg-gray-55 transition-colors cursor-pointer"
           >
@@ -584,6 +713,8 @@ export function AppShell() {
             setShowCreatePost={setShowCreatePost}
             showCreateAnnouncement={showCreateAnnouncement}
             setShowCreateAnnouncement={setShowCreateAnnouncement}
+            tasks={tasks}
+            setTasks={setTasks}
             showCreateTask={showCreateTask}
             setShowCreateTask={setShowCreateTask}
             reporteesViewMode={reporteesViewMode}
@@ -609,6 +740,8 @@ export function AppShell() {
             profileOrigin={profileOrigin}
             documentsTab={documentsTab}
             settingsTab={settingsTab}
+            boardInsightsOpen={boardInsightsOpen}
+            setBoardInsightsOpen={setBoardInsightsOpen}
           />
         </main>
 

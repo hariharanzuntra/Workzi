@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ChevronDown, Check, X, CalendarDays } from "lucide-react";
+import { ChevronDown, Check, X, CalendarDays, CheckCircle } from "lucide-react";
 import {
   ResponsiveContainer,
   BarChart as RBarChart,
@@ -23,6 +23,7 @@ import {
 import { EMPLOYEES } from "@/modules/organization/data/employees";
 import { EMP_COLORS } from "@/shared/constants/colors";
 import { MySpacePage } from "@/modules/my-space";
+import { DiscardChangesDialog } from "@/modules/tasks/components/discard-changes-dialog";
 import {
   LEAVE_REQUESTS,
   LEAVE_MONTHLY,
@@ -65,6 +66,31 @@ export function LeavePage({
   const attMsg = (m: string) => {
     setAttToast(m);
     setTimeout(() => setAttToast(null), 2500);
+  };
+
+  // Controlled states for Apply Leave form
+  const [leaveType, setLeaveType] = useState("Annual Leave");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [reason, setReason] = useState("");
+  const [showLeaveDiscardConfirm, setShowLeaveDiscardConfirm] = useState(false);
+
+  const isLeaveDirty = !!(fromDate || toDate || reason || leaveType !== "Annual Leave");
+
+  const handleCloseLeaveRequest = () => {
+    if (isLeaveDirty) {
+      setShowLeaveDiscardConfirm(true);
+    } else {
+      setShowApply(false);
+      resetLeaveForm();
+    }
+  };
+
+  const resetLeaveForm = () => {
+    setLeaveType("Annual Leave");
+    setFromDate("");
+    setToDate("");
+    setReason("");
   };
 
   return (
@@ -345,7 +371,7 @@ export function LeavePage({
         )}
       </div>
       {showApply && (
-        <Modal title="Apply Leave" onClose={() => setShowApply(false)}>
+        <Modal title="Apply Leave" onClose={handleCloseLeaveRequest}>
           <div className="space-y-4">
             <SelectField
               label="Leave Type"
@@ -357,21 +383,45 @@ export function LeavePage({
                 "Paternity Leave",
                 "Unpaid Leave",
               ]}
+              value={leaveType}
+              onChange={setLeaveType}
             />
             <div className="grid grid-cols-2 gap-4">
-              <InputField label="From Date" type="date" required />
-              <InputField label="To Date" type="date" required />
+              <InputField
+                label="From Date"
+                type="date"
+                required
+                value={fromDate}
+                onChange={setFromDate}
+              />
+              <InputField
+                label="To Date"
+                type="date"
+                required
+                value={toDate}
+                onChange={setToDate}
+              />
             </div>
-            <InputField label="Reason" placeholder="Brief reason for leave…" required />
+            <InputField
+              label="Reason"
+              placeholder="Brief reason for leave…"
+              required
+              value={reason}
+              onChange={setReason}
+            />
             <div className="p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
               <span className="font-semibold">Annual Leave Balance:</span> 6 days
               remaining out of 18
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-              <Btn variant="outline" onClick={() => setShowApply(false)}>
+              <Btn variant="outline" onClick={handleCloseLeaveRequest}>
                 Cancel
               </Btn>
-              <Btn onClick={() => setShowApply(false)}>
+              <Btn onClick={() => {
+                setShowApply(false);
+                resetLeaveForm();
+                attMsg("Leave request submitted successfully.");
+              }}>
                 <Check size={13} />
                 Submit Request
               </Btn>
@@ -379,6 +429,15 @@ export function LeavePage({
           </div>
         </Modal>
       )}
+      <DiscardChangesDialog
+        isOpen={showLeaveDiscardConfirm}
+        onClose={() => setShowLeaveDiscardConfirm(false)}
+        onDiscard={() => {
+          setShowLeaveDiscardConfirm(false);
+          setShowApply(false);
+          resetLeaveForm();
+        }}
+      />
       {attToast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gray-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">
           <CheckCircle size={15} className="text-green-400 flex-shrink-0" />

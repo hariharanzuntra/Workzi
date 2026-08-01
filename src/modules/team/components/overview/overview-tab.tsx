@@ -5,6 +5,7 @@ import { getAttendanceDetails } from "@/modules/attendance";
 import { Avt } from "@/shared/components";
 import { cn } from "@/shared/utils";
 import { TEAM_CELEBRATIONS, TEAM_TASKS } from "../../data/team-data";
+import { TeamTask } from "../../types";
 
 interface OverviewTabProps {
   deptFilter: string;
@@ -13,6 +14,7 @@ interface OverviewTabProps {
   setAttendanceSection: (sec: "My Space" | "My Team") => void;
   setLeaveSection: (sec: "My Space" | "My Team") => void;
   navigate: (page: string, emp?: any, tabOrSection?: string) => void;
+  tasks?: TeamTask[];
 }
 
 export function OverviewTab({
@@ -22,6 +24,7 @@ export function OverviewTab({
   setAttendanceSection,
   setLeaveSection,
   navigate,
+  tasks = TEAM_TASKS,
 }: OverviewTabProps) {
   const teamMembers =
     deptFilter === "All"
@@ -73,7 +76,7 @@ export function OverviewTab({
     return att.status === "Late";
   }).length;
 
-  const overdueTasksCount = TEAM_TASKS.filter((t) => {
+  const overdueTasksCount = tasks.filter((t) => {
     const isDeptMatch =
       deptFilter === "All" ||
       t.dept === deptFilter ||

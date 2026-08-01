@@ -20,6 +20,7 @@ import { LEAVE_MONTHLY } from "@/modules/leave/data/leave-requests";
 import { DOCUMENTS_LIST } from "@/modules/documents/data/documents-list";
 import { EMP_COLORS } from "@/shared/constants/colors";
 import { Avt, StatusBadge, Btn, KPICard, Modal, TabBar, InputField, SelectField } from "@/shared/components";
+import { CustomAlertDialog } from "@/modules/tasks/components/discard-changes-dialog";
 
 export function OrgEmpWorkspace({ emp, onClose, onAction }: { emp: Employee; onClose: ()=>void; onAction: (a:string)=>void }) {
   const [wsTab, setWsTab] = useState("Overview");
@@ -689,6 +690,7 @@ function EmployeeTreeTab({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [selectedNode, setSelectedNode] = useState<Employee | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   const [treeDept, setTreeDept] = useState("All");
   const [treeBranch, setTreeBranch] = useState("All");
@@ -953,7 +955,7 @@ function EmployeeTreeTab({
             <Btn 
               onClick={() => {
                 if (selectedNode.id === "CEO-ROOT" || selectedNode.id === "V001") {
-                  alert("This is a system/virtual employee node.");
+                  setAlertMsg("This is a system/virtual employee node.");
                   return;
                 }
                 setTab("Employees");
@@ -967,7 +969,7 @@ function EmployeeTreeTab({
               variant="outline" 
               onClick={() => {
                 if (selectedNode.id === "CEO-ROOT" || selectedNode.id === "V001") {
-                  alert("This is a system/virtual employee node.");
+                  setAlertMsg("This is a system/virtual employee node.");
                   return;
                 }
                 setTab("Employees");
@@ -980,6 +982,13 @@ function EmployeeTreeTab({
           </div>
         </div>
       )}
+
+      <CustomAlertDialog
+        isOpen={!!alertMsg}
+        onClose={() => setAlertMsg(null)}
+        title="Org Chart Action"
+        description={alertMsg || ""}
+      />
 
       {/* ── Filters Modal ── */}
       {showTeamFilter && (

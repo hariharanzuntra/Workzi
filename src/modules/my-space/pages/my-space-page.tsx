@@ -22,6 +22,7 @@ import { cn, fmtDate } from "@/shared/utils";
 import { EMP_COLORS } from "@/shared/constants/colors";
 import { LEAVE_REQUESTS } from "@/modules/leave/data/leave-requests";
 import { Avt, StatusBadge, Btn, Modal, SelectField, InputField, Drawer } from "@/shared/components";
+import { ApprovalList, ApprovalFilters, ApprovalDetailsDrawer } from "../components/approvals";
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 interface AppComment {
@@ -380,6 +381,7 @@ export function MySpacePage({
   const [approvalDetailId,  setApprovalDetailId]  = useState<string|null>(null);
   const [approvalView,      setApprovalView]      = useState("Pending");
   const [approvalType,      setApprovalType]      = useState("All");
+  const [showApprovalFilters, setShowApprovalFilters] = useState(false);
 
   const confirmApproveItem = () => {
     if (!appApproveId) return;
@@ -2250,7 +2252,7 @@ export function MySpacePage({
                   </div>
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b border-gray-100">
-                      <tr>{["Type","From","To","Days","Applied","Approver","Status",""].map(h=><th key={h} className="px-5 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
+                      <tr>{["Type","From","To","Days","Applied","Approver","Status"].map(h=><th key={h} className="px-5 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {myLeaveHist.filter(r=>leaveTypeFilter==="All"||r.type===leaveTypeFilter).map(r=>(
@@ -2262,14 +2264,6 @@ export function MySpacePage({
                           <td className="px-5 py-3 text-xs text-gray-400">{r.applied}</td>
                           <td className="px-5 py-3 text-xs text-gray-600">{r.approver}</td>
                           <td className="px-5 py-3"><StatusBadge status={r.status}/></td>
-                          <td className="px-5 py-3">
-                            {r.status==="Pending"&&(
-                              <div className="flex gap-1">
-                                <button onClick={e=>{e.stopPropagation();confirmLeaveApprove(r.id);}} className="px-2 py-1 bg-green-50 border border-green-200 text-green-700 text-[9px] font-medium rounded hover:bg-green-100">Approve</button>
-                                <button onClick={e=>{e.stopPropagation();setLeaveRejectModal(r.id);}} className="px-2 py-1 bg-red-50 border border-red-200 text-red-700 text-[9px] font-medium rounded hover:bg-red-100">Reject</button>
-                              </div>
-                            )}
-                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -2749,223 +2743,56 @@ export function MySpacePage({
         )}
 
         {/* ════════════════════ APPROVALS ════════════════════ */}
-        {tab === "Approvals" && (
-          <div className="flex h-full overflow-hidden">
-            {/* List panel */}
-            <div className={cn("flex flex-col bg-white", approvalDetailId ? "w-80 flex-shrink-0 border-r border-gray-200" : "flex-1")}>
-              <div className="border-b border-gray-200 px-5 py-3 flex items-center gap-2 flex-shrink-0 flex-wrap">
-                <div className="flex gap-1">
-                  {["Pending","Approved","Rejected"].map(v => (
-                    <button key={v} onClick={() => setApprovalView(v)} className={cn("px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors", approvalView===v?"bg-[#EEF2FF] text-[#5C5CFF]":"text-gray-600 hover:bg-gray-100")}>
-                      {v}<span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-semibold", approvalView===v?"bg-[#5C5CFF] text-white":"bg-gray-200 text-gray-500")}>{approvals.filter(a=>a.status===v).length}</span>
-                    </button>
-                  ))}
-                </div>
-                {!approvalDetailId && (
-                  <div className="flex gap-1 flex-wrap">
-                    {["All","Leave","Attendance","Shift","Department"].map(t => (
-                      <button key={t} onClick={() => setApprovalType(t)} className={cn("px-2 py-1 text-[10px] font-medium rounded-lg transition-colors", approvalType===t?"text-[#5C5CFF] bg-[#EEF2FF]":"text-gray-400 hover:text-gray-600 hover:bg-gray-100")}>{t}</button>
-                    ))}
-                  </div>
-                )}
-                <span className="ml-auto text-[10px] text-gray-400">{filteredApprovals.length} items</span>
+        {tab === "Approvals" && (() => {
+          const selectedApproval = approvals.find(a => a.id === approvalDetailId);
+          return (
+            <div className="flex h-full overflow-hidden relative w-full">
+              {/* List panel */}
+              <div className="flex flex-col bg-white flex-1 h-full overflow-hidden">
+                <ApprovalFilters
+                  approvalView={approvalView}
+                  setApprovalView={setApprovalView}
+                  approvalType={approvalType}
+                  setApprovalType={setApprovalType}
+                  allApprovals={approvals}
+                  filteredCount={filteredApprovals.length}
+                  showApprovalFilters={showApprovalFilters}
+                  setShowApprovalFilters={setShowApprovalFilters}
+                />
+                <ApprovalList
+                  approvals={filteredApprovals}
+                  approvalView={approvalView}
+                  selectedApprovalId={approvalDetailId}
+                  onSelectApproval={(id) => setApprovalDetailId(id)}
+                />
               </div>
-              <div className="flex-1 overflow-auto divide-y divide-gray-100">
-                {filteredApprovals.length === 0 && <div className="py-12 text-center"><CheckCircle size={24} className="text-green-300 mx-auto mb-2" /><p className="text-sm text-gray-400">No {approvalView.toLowerCase()} approvals</p></div>}
-                {filteredApprovals.map(a => (
-                  <div key={a.id} onClick={() => setApprovalDetailId(approvalDetailId===a.id?null:a.id)}
-                    className={cn("flex items-center gap-3 px-5 py-4 hover:bg-gray-50 cursor-pointer transition-colors", approvalDetailId===a.id&&"bg-[#EEF2FF]")}>
-                    <Avt initials={a.employee.split(" ").map(n=>n[0]).join("")} color={EMP_COLORS[parseInt(a.id.slice(-1))%EMP_COLORS.length]} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <p className="text-sm font-medium text-gray-800 truncate">{a.employee}</p>
-                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium flex-shrink-0">{a.type}</span>
-                      </div>
-                      <p className="text-xs text-gray-500 truncate">{a.detail}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">Applied {a.applied}</p>
-                    </div>
-                    {a.status === "Pending" ? <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" /> : <StatusBadge status={a.status} />}
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Approval Detail panel */}
-            {approvalDetailId && (() => {
-              const item = approvals.find(a => a.id === approvalDetailId);
-              if (!item) return null;
-              const allComments = approvalComments[approvalDetailId] || [];
-              const topComments = allComments.filter(c => c.parentId === null);
-              return (
-                <div className="flex-1 flex flex-col overflow-hidden bg-white border-l border-gray-200">
-                  <div className="px-5 py-3.5 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-                    <div className="flex items-center gap-2.5">
-                      <Avt initials={item.employee.split(" ").map(n=>n[0]).join("")} color={EMP_COLORS[parseInt(item.id.slice(-1))%EMP_COLORS.length]} size="sm" />
-                      <div><p className="text-sm font-semibold text-gray-900">{item.employee}</p><p className="text-xs text-gray-400">{item.dept} · {item.type}</p></div>
-                    </div>
-                    <div className="flex items-center gap-2"><StatusBadge status={item.status} /><button onClick={() => setApprovalDetailId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X size={14} /></button></div>
-                  </div>
-                  <div className="flex-1 overflow-auto p-5 space-y-4">
-                    {/* Info grid */}
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {([["Leave Type",item.leaveType],["Department",item.dept],["Date",item.dateRange],["Days",item.days],["Applied",item.applied],["Status",item.status]] as [string,string][]).map(([k,v]) => (
-                        <div key={k} className="bg-gray-50 rounded-lg p-3"><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{k}</p><p className="text-xs font-semibold text-gray-800">{v}</p></div>
-                      ))}
-                    </div>
-                    {/* Reason */}
-                    <div className="bg-white border border-gray-200 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-gray-700 mb-2">Reason</p>
-                      <p className="text-sm text-gray-600 leading-relaxed">{item.reason}</p>
-                    </div>
-                    {/* Attachment */}
-                    <div className="bg-white border border-gray-200 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-gray-700 mb-2">Attachment</p>
-                      {item.leaveType === "Sick Leave" ? (
-                        <div className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg border border-gray-200">
-                          <FileText size={14} className="text-red-500 flex-shrink-0" />
-                          <div className="flex-1"><p className="text-xs font-medium text-gray-700">Medical_Certificate.pdf</p><p className="text-[10px] text-gray-400">0.8 MB</p></div>
-                          <button className="text-xs text-[#5C5CFF] flex items-center gap-1 hover:underline"><Download size={11} />Download</button>
-                        </div>
-                      ) : <p className="text-xs text-gray-400">No attachment required</p>}
-                    </div>
-                    {/* Approval Timeline */}
-                    <div className="bg-white border border-gray-200 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-gray-700 mb-3">Approval Timeline</p>
-                      <div className="space-y-2">
-                        {[
-                          { label:"Submitted",      time:`${item.applied} · 9:00 AM`, done:true,                  color:"#5C5CFF" },
-                          { label:"Under Review",   time:`${item.applied} · 9:15 AM`, done:true,                  color:"#F59E0B" },
-                          { label:item.status==="Pending"?"Awaiting Decision":item.status, time:item.status==="Pending"?"Pending…":"Jul 2 · 10:00 AM", done:item.status!=="Pending", color:item.status==="Approved"?"#22C55E":"#EF4444" },
-                        ].map((step,si) => (
-                          <div key={si} className="flex items-center gap-3">
-                            {step.done
-                              ? <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor:step.color }}><Check size={11} className="text-white" /></div>
-                              : <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"><div className="w-2 h-2 rounded-full bg-gray-300" /></div>
-                            }
-                            <div className="flex-1 flex items-center justify-between">
-                              <p className={cn("text-xs font-medium", step.done?"text-gray-800":"text-gray-400")}>{step.label}</p>
-                              <p className="text-[10px] text-gray-400">{step.time}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    {/* Comments — full CRUD */}
-                    <div className="bg-white border border-gray-200 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-gray-700 mb-3">Comments</p>
-                      <div className="space-y-3 mb-3">
-                        {topComments.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No comments yet</p>}
-                        {topComments.map(c => {
-                          const replies = allComments.filter(r => r.parentId === c.id);
-                          const isEditing = editCommentId === c.id;
-                          return (
-                            <div key={c.id}>
-                              <div className="flex gap-2.5">
-                                <Avt initials={c.author.split(" ").map(n=>n[0]).join("")} color={c.isOwn?"#5C5CFF":"#22C55E"} size="xs" />
-                                <div className="flex-1">
-                                  {isEditing ? (
-                                    <div className="bg-gray-50 rounded-lg p-2.5">
-                                      <textarea value={editCommentText} onChange={e => setEditCommentText(e.target.value)} rows={2} className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg bg-white resize-none focus:outline-none focus:ring-1 focus:ring-[#5C5CFF]" />
-                                      <div className="flex gap-2 mt-1.5">
-                                        <button onClick={() => saveEditComment(approvalDetailId, c.id)} className="px-2 py-1 bg-[#5C5CFF] text-white text-[10px] rounded-lg font-medium">Save</button>
-                                        <button onClick={() => { setEditCommentId(null); setEditCommentText(""); }} className="px-2 py-1 text-[10px] text-gray-500 border border-gray-200 rounded-lg">Cancel</button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="bg-gray-50 rounded-lg p-2.5">
-                                      <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs font-semibold text-gray-800">{c.author}</span>
-                                        <div className="flex items-center gap-1.5">
-                                          <span className="text-[10px] text-gray-400">{fmtTs(c.timestamp)}</span>
-                                          {c.edited && <span className="text-[9px] text-gray-400 italic">(edited)</span>}
-                                        </div>
-                                      </div>
-                                      <p className="text-xs text-gray-700">{c.text}</p>
-                                      <div className="flex items-center gap-3 mt-2">
-                                        <button onClick={() => { setReplyToId(replyToId===c.id?null:c.id); setReplyText(""); }} className="text-[10px] text-gray-400 hover:text-[#5C5CFF] flex items-center gap-1"><CornerDownRight size={10} />Reply</button>
-                                        {c.isOwn && <>
-                                          <button onClick={() => { setEditCommentId(c.id); setEditCommentText(c.text); }} className="text-[10px] text-gray-400 hover:text-[#5C5CFF]">Edit</button>
-                                          <button onClick={() => deleteComment(approvalDetailId, c.id)} className="text-[10px] text-gray-400 hover:text-red-500">Delete</button>
-                                        </>}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {replies.length > 0 && (
-                                    <div className="ml-5 mt-2 space-y-2 border-l-2 border-gray-100 pl-3">
-                                      {replies.map(r => (
-                                        <div key={r.id} className="flex gap-2">
-                                          <Avt initials={r.author.split(" ").map(n=>n[0]).join("")} color={r.isOwn?"#5C5CFF":"#22C55E"} size="xs" />
-                                          <div className="flex-1 bg-gray-50 rounded-lg p-2.5">
-                                            <div className="flex items-center justify-between mb-1">
-                                              <span className="text-xs font-semibold text-gray-800">{r.author}</span>
-                                              <div className="flex items-center gap-1.5">
-                                                <span className="text-[10px] text-gray-400">{fmtTs(r.timestamp)}</span>
-                                                {r.isOwn && <button onClick={() => deleteComment(approvalDetailId, r.id)} className="text-[9px] text-gray-400 hover:text-red-500">Delete</button>}
-                                              </div>
-                                            </div>
-                                            <p className="text-xs text-gray-700">{r.text}</p>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                  {replyToId === c.id && (
-                                    <div className="ml-5 mt-2 flex gap-2 border-l-2 border-[#5C5CFF]/20 pl-3">
-                                      <Avt initials="AA" color="#5C5CFF" size="xs" />
-                                      <div className="flex-1 flex gap-1.5">
-                                        <input value={replyText} onChange={e => setReplyText(e.target.value)} onKeyDown={e => e.key==="Enter" && addReply(approvalDetailId, c.id)} placeholder={`Reply to ${c.author}…`} className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#5C5CFF] bg-gray-50" />
-                                        <button onClick={() => addReply(approvalDetailId, c.id)} className="px-2.5 py-1 bg-[#5C5CFF] text-white rounded-lg text-[10px] font-medium">Reply</button>
-                                        <button onClick={() => setReplyToId(null)} className="p-1 text-gray-400 hover:text-gray-600"><X size={12} /></button>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="flex gap-2">
-                        <Avt initials="AA" color="#5C5CFF" size="xs" />
-                        <div className="flex-1">
-                          <div className="flex gap-1.5">
-                            <input value={approvalDraft} onChange={e => setApprovalDraft(e.target.value)} onKeyDown={e => e.key==="Enter" && addApprovalComment(approvalDetailId)} placeholder="Add comment… @mention (Enter to post)" className="flex-1 px-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5C5CFF] bg-gray-50" />
-                            <button onClick={() => addApprovalComment(approvalDetailId)} className="px-2.5 py-1.5 bg-[#5C5CFF] text-white rounded-lg hover:bg-[#4A4AE0]"><Send size={12} /></button>
-                          </div>
-                          <p className="text-[9px] text-gray-400 mt-1">Use @ to mention teammates · Enter to post</p>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Activity */}
-                    <div className="bg-white border border-gray-200 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-gray-700 mb-3">Activity</p>
-                      <div className="space-y-2.5">
-                        {[
-                          { actor:"System",     action:"Request created",                 time:`${item.applied} · 9:00 AM`, color:"#9CA3AF" },
-                          { actor:"Alex Admin", action:"Assigned to review queue",        time:`${item.applied} · 9:01 AM`, color:"#5C5CFF" },
-                          ...(item.status !== "Pending" ? [{ actor:"Alex Admin", action:item.status==="Approved"?"Approved this request":"Rejected this request", time:"Jul 2 · 10:15 AM", color:item.status==="Approved"?"#22C55E":"#EF4444" }] : []),
-                        ].map((ev,i) => (
-                          <div key={i} className="flex items-start gap-2.5 text-xs">
-                            <Avt initials={ev.actor.slice(0,2)} color={ev.color} size="xs" />
-                            <div><span className="font-medium text-gray-700">{ev.actor}</span><span className="text-gray-500"> {ev.action}</span><p className="text-[10px] text-gray-400 mt-0.5">{ev.time}</p></div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    {/* Actions */}
-                    {item.status === "Pending" && (
-                      <div className="flex gap-3">
-                        <Btn onClick={() => setAppApproveId(item.id)} className="flex-1 bg-green-600 hover:bg-green-700 justify-center"><Check size={13} />Approve</Btn>
-                        <Btn onClick={() => setAppRejectId(item.id)} variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50 justify-center"><X size={13} />Reject</Btn>
-                        <Btn variant="outline"><Printer size={13} /></Btn>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        )}
+              {/* Approval Details Overlay */}
+              <ApprovalDetailsDrawer
+                approval={selectedApproval}
+                open={Boolean(approvalDetailId)}
+                onClose={() => setApprovalDetailId(null)}
+                onApprove={(id) => setAppApproveId(id)}
+                onReject={(id) => setAppRejectId(id)}
+                comments={approvalDetailId ? (approvalComments[approvalDetailId] || []) : []}
+                approvalDraft={approvalDraft}
+                setApprovalDraft={setApprovalDraft}
+                editCommentId={editCommentId}
+                setEditCommentId={setEditCommentId}
+                editCommentText={editCommentText}
+                setEditCommentText={setEditCommentText}
+                replyToId={replyToId}
+                setReplyToId={setReplyToId}
+                replyText={replyText}
+                setReplyText={setReplyText}
+                addApprovalComment={addApprovalComment}
+                addReply={addReply}
+                saveEditComment={saveEditComment}
+                deleteComment={deleteComment}
+              />
+            </div>
+          );
+        })()}
 
         {/* ════════════════════ GLOBAL CALENDAR ════════════════════ */}
         {tab === "Calendar" && (

@@ -10,9 +10,25 @@ import {
 } from "lucide-react";
 import { FeedPost, FeedComment } from "../../types";
 import { cn } from "@/shared/utils";
-import { Btn, Modal, Drawer } from "@/shared/components";
+import { Btn, Modal, Drawer, UserAvatar } from "@/shared/components";
 import { DiscussionCard } from "./discussion-card";
+import { DiscardChangesDialog } from "@/modules/tasks/components/discard-changes-dialog";
 import { MentionPopup } from "./mention-popup";
+
+const currentUser = {
+  name: "Alex Admin",
+  initials: "AA",
+  color: "#5C5CFF",
+  designation: "VP of HR",
+  department: {
+    id: "hr",
+    name: "HR"
+  },
+  team: {
+    id: "management",
+    name: "Management"
+  }
+};
 
 interface FeedTabProps {
   posts: FeedPost[];
@@ -62,6 +78,8 @@ export function FeedTab({
     setTimeout(() => setFeedToast(null), 2500);
   };
 
+  const [showEditDiscardConfirm, setShowEditDiscardConfirm] = useState(false);
+
   const handleCloseModal = () => {
     setActiveModal(null);
     setShowCreateDiscussion(false);
@@ -70,12 +88,31 @@ export function FeedTab({
     setIsDeleting(false);
   };
 
-  // Sync prop-based triggers to activeModal
+  const handleCloseEditRequest = () => {
+    const originalPost = posts.find(p => p.id === editingPost?.id);
+    const isEditPostDirty = editingPost && originalPost && (
+      editingPost.text !== originalPost.text ||
+      editingPost.priority !== originalPost.priority ||
+      (editingPost.attachments || []).length !== (originalPost.attachments || []).length
+    );
+
+    if (isEditPostDirty) {
+      setShowEditDiscardConfirm(true);
+    } else {
+      handleCloseModal();
+    }
+  };
+
+  // Sync prop-based triggers to focus top composer
   useEffect(() => {
     if (showCreateDiscussion) {
-      setActiveModal("new-discussion");
+      const textarea = document.getElementById("feed-composer-textarea");
+      if (textarea) {
+        textarea.focus();
+      }
+      setShowCreateDiscussion(false);
     }
-  }, [showCreateDiscussion]);
+  }, [showCreateDiscussion, setShowCreateDiscussion]);
 
   // Discussion Delete state
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -120,7 +157,7 @@ export function FeedTab({
     emoji: string,
     commentId?: string
   ) => {
-    const currentUser = "Alex Admin";
+    const currentUserName = currentUser.name;
     setPosts((prev) =>
       prev.map((p) => {
         if (p.id !== postId) return p;
@@ -130,13 +167,13 @@ export function FeedTab({
           const reactions = [...p.reactions];
           const existing = reactions.find((r) => r.emoji === emoji);
           if (existing) {
-            if (existing.users.includes(currentUser)) {
-              existing.users = existing.users.filter((u) => u !== currentUser);
+            if (existing.users.includes(currentUserName)) {
+              existing.users = existing.users.filter((u) => u !== currentUserName);
             } else {
-              existing.users.push(currentUser);
+              existing.users.push(currentUserName);
             }
           } else {
-            reactions.push({ emoji, users: [currentUser] });
+            reactions.push({ emoji, users: [currentUserName] });
           }
           return {
             ...p,
@@ -150,15 +187,15 @@ export function FeedTab({
                 const reactions = [...(c.reactions || [])];
                 const existing = reactions.find((r) => r.emoji === emoji);
                 if (existing) {
-                  if (existing.users.includes(currentUser)) {
+                  if (existing.users.includes(currentUserName)) {
                     existing.users = existing.users.filter(
-                      (u) => u !== currentUser
+                      (u) => u !== currentUserName
                     );
                   } else {
-                    existing.users.push(currentUser);
+                    existing.users.push(currentUserName);
                   }
                 } else {
-                  reactions.push({ emoji, users: [currentUser] });
+                  reactions.push({ emoji, users: [currentUserName] });
                 }
                 return {
                   ...c,
@@ -183,22 +220,25 @@ export function FeedTab({
     dept: string,
     attachments: any[]
   ) => {
+    const currentTeam = currentUser?.team ?? currentUser?.department ?? { id: "general", name: "General" };
     const newPost: FeedPost = {
       id: `F${Date.now()}`,
-      author: "Alex Admin",
-      initials: "AA",
-      color: "#5C5CFF",
+      author: currentUser?.name || "Alex Admin",
+      initials: currentUser?.initials || "AA",
+      color: currentUser?.color || "#5C5CFF",
       time: "Just now",
       text,
-      dept: dept === "All" ? "All" : dept,
-      designation: "VP of HR",
+      dept: currentUser?.department?.name ?? currentTeam.name ?? "All",
+      teamId: currentTeam?.id,
+      teamName: currentTeam?.name,
+      designation: currentUser?.designation || "VP of HR",
       pinned: false,
       saved: false,
       priority: priority === "None" ? undefined : priority,
       resolved: false,
       reactions: [],
       comments: [],
-      followers: ["Alex Admin"],
+      followers: [currentUser?.name || "Alex Admin"],
       attachments: attachments.length > 0 ? attachments : undefined,
     };
     setPosts((prev) => [newPost, ...prev]);
@@ -358,6 +398,261 @@ export function FeedTab({
           </div>
         </div>
 
+        {/* Permanent Top Feed Composer */}
+        <div className="bg-white border border-gray-200 rounded-[12px] shadow-sm mb-5 flex-shrink-0 overflow-hidden flex flex-col text-left">
+          <div className="flex gap-3 p-4 items-start">
+            <UserAvatar name="Alex Admin" initials="AA" color="#5C5CFF" size="32px" />
+            <div className="flex-1 relative">
+              <textarea
+                id="feed-composer-textarea"
+                rows={3}
+                value={newDiscText}
+                onChange={(e) => setNewDiscText(e.target.value)}
+                placeholder="Share an update, ask a question, or @mention someone…"
+                className="w-full text-xs border-0 outline-none resize-none text-gray-900 bg-white placeholder-gray-400 pr-2 pt-1 font-medium"
+                style={{ minHeight: "60px", maxHeight: "150px" }}
+              />
+              <MentionPopup text={newDiscText} setText={setNewDiscText} />
+            </div>
+          </div>
+
+          {/* Attachment Previews */}
+          {newDiscAttachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-4 pb-3">
+              {newDiscAttachments.map((att, i) => (
+                <div key={i} className="flex items-center gap-2 bg-gray-55 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700">
+                  <FileText size={14} className="text-gray-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium truncate max-w-[150px]">{att.name}</p>
+                    <p className="text-[10px] text-gray-400">{att.size}</p>
+                  </div>
+                  <button
+                    onClick={() => setNewDiscAttachments(prev => prev.filter((_, idx) => idx !== i))}
+                    className="p-1 text-gray-450 hover:text-red-500 rounded-full cursor-pointer hover:bg-gray-100 border-0 bg-transparent flex items-center justify-center"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Formatting Tools */}
+          <div className="flex items-center gap-1.5 py-2 px-4 border-t border-gray-100 bg-gray-50/50 flex-wrap">
+            <button
+              onClick={() => {
+                const textarea = document.getElementById("feed-composer-textarea");
+                if (textarea) {
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const text = textarea.value;
+                  const selected = text.substring(start, end);
+                  setNewDiscText(text.substring(0, start) + "**" + selected + "**" + text.substring(end));
+                  setTimeout(() => { textarea.focus(); textarea.setSelectionRange(start + 2, start + 2 + selected.length); }, 0);
+                }
+              }}
+              className="p-1 px-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded hover:text-gray-800 border-0 bg-transparent cursor-pointer"
+              title="Bold"
+            >
+              B
+            </button>
+            <button
+              onClick={() => {
+                const textarea = document.getElementById("feed-composer-textarea");
+                if (textarea) {
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const text = textarea.value;
+                  const selected = text.substring(start, end);
+                  setNewDiscText(text.substring(0, start) + "*" + selected + "*" + text.substring(end));
+                  setTimeout(() => { textarea.focus(); textarea.setSelectionRange(start + 1, start + 1 + selected.length); }, 0);
+                }
+              }}
+              className="p-1 px-2 text-xs italic text-gray-500 hover:bg-gray-100 rounded hover:text-gray-800 border-0 bg-transparent cursor-pointer"
+              title="Italic"
+            >
+              I
+            </button>
+            <button
+              onClick={() => {
+                const textarea = document.getElementById("feed-composer-textarea");
+                if (textarea) {
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const text = textarea.value;
+                  const selected = text.substring(start, end);
+                  setNewDiscText(text.substring(0, start) + "__" + selected + "__" + text.substring(end));
+                  setTimeout(() => { textarea.focus(); textarea.setSelectionRange(start + 2, start + 2 + selected.length); }, 0);
+                }
+              }}
+              className="p-1 px-2 text-xs underline text-gray-500 hover:bg-gray-100 rounded hover:text-gray-800 border-0 bg-transparent cursor-pointer"
+              title="Underline"
+            >
+              U
+            </button>
+            <button
+              onClick={() => {
+                const textarea = document.getElementById("feed-composer-textarea");
+                if (textarea) {
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const text = textarea.value;
+                  const selected = text.substring(start, end);
+                  setNewDiscText(text.substring(0, start) + "~~" + selected + "~~" + text.substring(end));
+                  setTimeout(() => { textarea.focus(); textarea.setSelectionRange(start + 2, start + 2 + selected.length); }, 0);
+                }
+              }}
+              className="p-1 px-2 text-xs line-through text-gray-500 hover:bg-gray-100 rounded hover:text-gray-800 border-0 bg-transparent cursor-pointer"
+              title="Strikethrough"
+            >
+              S
+            </button>
+            <span className="w-px h-4 bg-gray-200 mx-1" />
+            <button
+              onClick={() => {
+                const textarea = document.getElementById("feed-composer-textarea");
+                if (textarea) {
+                  const start = textarea.selectionStart;
+                  const text = textarea.value;
+                  setNewDiscText(text.substring(0, start) + "\n- " + text.substring(start));
+                  setTimeout(() => { textarea.focus(); }, 0);
+                }
+              }}
+              className="p-1 px-2 text-xs text-gray-500 hover:bg-gray-100 rounded hover:text-gray-800 border-0 bg-transparent cursor-pointer font-medium"
+              title="Bullet List"
+            >
+              • List
+            </button>
+            <button
+              onClick={() => {
+                const textarea = document.getElementById("feed-composer-textarea");
+                if (textarea) {
+                  const start = textarea.selectionStart;
+                  const text = textarea.value;
+                  setNewDiscText(text.substring(0, start) + "\n1. " + text.substring(start));
+                  setTimeout(() => { textarea.focus(); }, 0);
+                }
+              }}
+              className="p-1 px-2 text-xs text-gray-500 hover:bg-gray-100 rounded hover:text-gray-800 border-0 bg-transparent cursor-pointer font-medium"
+              title="Numbered List"
+            >
+              1. List
+            </button>
+            <button
+              onClick={() => {
+                const textarea = document.getElementById("feed-composer-textarea");
+                if (textarea) {
+                  const start = textarea.selectionStart;
+                  const text = textarea.value;
+                  setNewDiscText(text.substring(0, start) + "\n> " + text.substring(start));
+                  setTimeout(() => { textarea.focus(); }, 0);
+                }
+              }}
+              className="p-1 px-2 text-xs text-gray-500 hover:bg-gray-100 rounded hover:text-gray-800 border-0 bg-transparent cursor-pointer font-medium"
+              title="Quote"
+            >
+              “ ” Quote
+            </button>
+            <button
+              onClick={() => {
+                const textarea = document.getElementById("feed-composer-textarea");
+                if (textarea) {
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const text = textarea.value;
+                  const selected = text.substring(start, end);
+                  setNewDiscText(text.substring(0, start) + "[" + selected + "](url)" + text.substring(end));
+                  setTimeout(() => { textarea.focus(); textarea.setSelectionRange(start + 1 + selected.length + 2, start + 1 + selected.length + 5); }, 0);
+                }
+              }}
+              className="p-1 px-2 text-xs text-gray-500 hover:bg-gray-100 rounded hover:text-gray-800 border-0 bg-transparent cursor-pointer font-mono"
+              title="Link"
+            >
+              Link
+            </button>
+            <span className="w-px h-4 bg-gray-200 mx-1" />
+            {["💡", "❓", "🚀", "👍", "🔥"].map(emoji => (
+              <button
+                key={emoji}
+                onClick={() => {
+                  setNewDiscText(prev => prev + emoji);
+                  const textarea = document.getElementById("feed-composer-textarea");
+                  if (textarea) setTimeout(() => textarea.focus(), 0);
+                }}
+                className="p-1 hover:bg-gray-100 rounded text-xs border-0 bg-transparent cursor-pointer"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+
+          {/* Action Row */}
+          <div className="flex items-center justify-between p-3.5 border-t border-gray-100">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setNewDiscAttachments(prev => [
+                    ...prev,
+                    { name: "Image_" + Date.now().toString().slice(-4) + ".jpg", type: "image", size: "1.4 MB" }
+                  ]);
+                }}
+                className="p-2 text-gray-450 hover:text-gray-655 hover:bg-gray-50 rounded-lg cursor-pointer border-0 bg-transparent flex items-center justify-center"
+                title="Attach Image"
+              >
+                <Paperclip size={16} />
+              </button>
+              <button
+                onClick={() => {
+                  setNewDiscAttachments(prev => [
+                    ...prev,
+                    { name: "Doc_" + Date.now().toString().slice(-4) + ".pdf", type: "file", size: "0.8 MB" }
+                  ]);
+                }}
+                className="text-xs text-[#5C5CFF] hover:text-[#4A4AE0] font-semibold hover:underline cursor-pointer bg-transparent border-0 flex items-center gap-1"
+              >
+                + Add File
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3.5">
+              {/* Priority Selection */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Priority:</span>
+                <select
+                  value={newDiscPriority}
+                  onChange={(e) => setNewDiscPriority(e.target.value as any)}
+                  className="text-xs bg-white border border-gray-200 rounded-lg p-1.5 outline-none text-gray-700 cursor-pointer font-medium"
+                >
+                  <option value="None">None</option>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+
+              {/* Send Button */}
+              <button
+                disabled={!newDiscText.trim() && newDiscAttachments.length === 0}
+                onClick={() => {
+                  handleCreatePost(newDiscText, newDiscPriority, "Management", newDiscAttachments);
+                  setNewDiscText("");
+                  setNewDiscPriority("None");
+                  setNewDiscAttachments([]);
+                  triggerFeedToast("Discussion posted");
+                }}
+                className={cn(
+                  "px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer border-0",
+                  (!newDiscText.trim() && newDiscAttachments.length === 0)
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-[#5C5CFF] text-white hover:bg-[#4A4AE0]"
+                )}
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Discussion timeline list */}
         <div className="flex-1 overflow-auto space-y-4 pr-1 pb-10">
           {(() => {
@@ -478,7 +773,7 @@ export function FeedTab({
       >
         <div className="space-y-5 text-left">
           {/* Fast toggles */}
-          <div className="bg-white rounded-xl border border-gray-150 p-4 space-y-3.5 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-150 p-[18px] space-y-3.5 shadow-sm">
             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
               Fast Filters
             </h4>
@@ -505,20 +800,20 @@ export function FeedTab({
           </div>
 
           {/* Status Filter */}
-          <div className="bg-white rounded-xl border border-gray-150 p-4 space-y-3 shadow-sm">
-            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+          <div className="bg-white rounded-xl border border-gray-150 p-[18px] space-y-3 shadow-sm text-left">
+            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
               Status
             </h4>
-            <div className="flex rounded-lg border border-gray-200 overflow-hidden bg-gray-50 p-0.5 gap-0.5 text-xs">
+            <div className="flex bg-[#F3F4F6] border border-[#E5E7EB] rounded-lg p-[3px] text-xs w-full max-w-[340px]" style={{ width: "fit-content", minWidth: "300px", height: "38px", alignItems: "center" }}>
               {(["All", "Resolved", "Unresolved"] as const).map((v) => (
                 <button
                   key={v}
                   onClick={() => setFeedResolvedFilter(v)}
                   className={cn(
-                    "flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer border-0 bg-transparent",
+                    "flex-1 h-[32px] px-4 rounded-md font-semibold transition-all cursor-pointer border-0 text-[13px] flex items-center justify-center bg-transparent text-[#6B7280]",
                     feedResolvedFilter === v
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:text-gray-750"
+                      ? "bg-white text-[#111827] shadow-[0_1px_2px_rgba(0,0,0,0.06)] font-medium"
+                      : "hover:text-[#111827]"
                   )}
                 >
                   {v}
@@ -528,7 +823,7 @@ export function FeedTab({
           </div>
 
           {/* Priority Filter */}
-          <div className="bg-white rounded-xl border border-gray-150 p-4 space-y-3 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-150 p-[18px] space-y-3 shadow-sm">
             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
               Priority
             </h4>
@@ -545,7 +840,7 @@ export function FeedTab({
           </div>
 
           {/* Department Filter */}
-          <div className="bg-white rounded-xl border border-gray-155 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-155 p-[18px] shadow-sm">
             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
               Department
             </h4>
@@ -558,7 +853,7 @@ export function FeedTab({
                     "px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer",
                     feedDeptFilter === d
                       ? "border-[#5C5CFF] bg-[#EEF2FF] text-[#5C5CFF]"
-                      : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                      : "border-gray-200 bg-white text-gray-600 hover:bg-gray-55"
                   )}
                 >
                   {d === "All" ? "All Departments" : d}
@@ -569,159 +864,9 @@ export function FeedTab({
         </div>
       </Drawer>
 
-      {/* Create Discussion Modal */}
-      {activeModal === "new-discussion" && (
-        <Modal title="New Discussion" onClose={handleCloseModal}>
-          <div className="space-y-4 text-left">
-            <div className="relative">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
-                What would you like to discuss?
-              </label>
-              <textarea
-                rows={4}
-                value={newDiscText}
-                onChange={(e) => setNewDiscText(e.target.value)}
-                placeholder="Type your message... use @ to mention teammates"
-                className="w-full text-xs border border-gray-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-[#5C5CFF] resize-none text-gray-900 bg-white"
-              />
-              <MentionPopup text={newDiscText} setText={setNewDiscText} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
-                  Audience / Department
-                </label>
-                <select
-                  value={newDiscDept}
-                  onChange={(e) => setNewDiscDept(e.target.value)}
-                  className="w-full text-xs bg-white border border-gray-200 rounded-lg p-2 font-medium outline-none text-gray-900"
-                >
-                  {depts.map((d) => (
-                    <option key={d} value={d}>
-                      {d === "All" ? "All Departments" : d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
-                  Priority Badge{" "}
-                  <span className="text-gray-450 font-normal">(optional)</span>
-                </label>
-                <select
-                  value={newDiscPriority}
-                  onChange={(e) => setNewDiscPriority(e.target.value as any)}
-                  className="w-full text-xs bg-white border border-gray-200 rounded-lg p-2 font-medium outline-none text-gray-900"
-                >
-                  <option value="None">None</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Simulated Attachments UI */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                  Attachments
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setNewDiscAttachments((prev) => [
-                        ...prev,
-                        {
-                          name: `Image_${Date.now()
-                            .toString()
-                            .slice(-4)}.jpg`,
-                          type: "image",
-                          size: "1.4 MB",
-                        },
-                      ]);
-                    }}
-                    className="text-[10px] text-[#5C5CFF] font-semibold hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-0"
-                  >
-                    <Paperclip size={10} /> Add Image
-                  </button>
-                  <button
-                    onClick={() => {
-                      setNewDiscAttachments((prev) => [
-                        ...prev,
-                        {
-                          name: `Doc_${Date.now()
-                            .toString()
-                            .slice(-4)}.pdf`,
-                          type: "file",
-                          size: "0.8 MB",
-                        },
-                      ]);
-                    }}
-                    className="text-[10px] text-[#5C5CFF] font-semibold hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-0"
-                  >
-                    <Paperclip size={10} /> Add File
-                  </button>
-                </div>
-              </div>
-              {newDiscAttachments.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {newDiscAttachments.map((att, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-1.5 bg-gray-55 border border-gray-200 rounded-lg p-1.5 text-[10px] text-gray-700"
-                    >
-                      <FileText size={10} className="text-gray-455" />
-                      <span className="truncate max-w-[120px]">{att.name}</span>
-                      <span className="text-gray-400">({att.size})</span>
-                      <button
-                        onClick={() =>
-                          setNewDiscAttachments((prev) =>
-                            prev.filter((_, idx) => idx !== i)
-                          )
-                        }
-                        className="text-red-500 hover:text-red-750 ml-1 cursor-pointer bg-transparent border-0"
-                      >
-                        <X size={10} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-              <Btn variant="outline" onClick={handleCloseModal}>
-                Cancel
-              </Btn>
-              <Btn
-                variant="primary"
-                disabled={!newDiscText.trim()}
-                onClick={() => {
-                  handleCreatePost(
-                    newDiscText,
-                    newDiscPriority,
-                    newDiscDept,
-                    newDiscAttachments
-                  );
-                  handleCloseModal();
-                  setNewDiscText("");
-                  setNewDiscPriority("None");
-                  setNewDiscDept("All");
-                  setNewDiscAttachments([]);
-                }}
-              >
-                Create Discussion
-              </Btn>
-            </div>
-          </div>
-        </Modal>
-      )}
-
       {/* Edit Discussion Modal */}
       {activeModal === "edit-discussion" && editingPost && (
-        <Modal title="Edit Discussion" onClose={handleCloseModal}>
+        <Modal title="Edit Discussion" onClose={handleCloseEditRequest}>
           <div className="space-y-4 text-left">
             <div className="relative">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
@@ -866,7 +1011,7 @@ export function FeedTab({
             </div>
 
             <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-              <Btn variant="outline" onClick={handleCloseModal}>
+              <Btn variant="outline" onClick={handleCloseEditRequest}>
                 Cancel
               </Btn>
               <Btn
@@ -932,6 +1077,15 @@ export function FeedTab({
           <span>{feedToast}</span>
         </div>
       )}
+
+      <DiscardChangesDialog
+        isOpen={showEditDiscardConfirm}
+        onClose={() => setShowEditDiscardConfirm(false)}
+        onDiscard={() => {
+          setShowEditDiscardConfirm(false);
+          handleCloseModal();
+        }}
+      />
     </div>
   );
 }

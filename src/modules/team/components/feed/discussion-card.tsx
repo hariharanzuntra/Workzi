@@ -18,6 +18,7 @@ import {
 import { FeedPost, FeedComment } from "../../types";
 import { cn } from "@/shared/utils";
 import { Avt } from "@/shared/components";
+import { CustomAlertDialog } from "@/modules/tasks/components/discard-changes-dialog";
 import { MentionPopup } from "./mention-popup";
 
 function CornerDownRight(props: any) {
@@ -95,6 +96,7 @@ export function DiscussionCard({
   // Comment Edit target state
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState("");
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   // Collapse replies state
   const [collapsedReplies, setCollapsedReplies] = useState<Record<string, boolean>>({});
@@ -105,7 +107,7 @@ export function DiscussionCard({
     navigator.clipboard.writeText(
       `${window.location.origin}/feed/discussion/${post.id}`
     );
-    alert("Discussion link copied to clipboard!");
+    setAlertMsg("Discussion link copied to clipboard!");
     setShowMenu(false);
   };
 
@@ -671,6 +673,12 @@ export function DiscussionCard({
           </div>
         </div>
       )}
+      <CustomAlertDialog
+        isOpen={!!alertMsg}
+        onClose={() => setAlertMsg(null)}
+        title="Link Copied"
+        description={alertMsg || ""}
+      />
     </div>
   );
 }

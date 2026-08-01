@@ -47,6 +47,10 @@ interface AppRouterProps {
   profileOrigin: string | null;
   documentsTab: string;
   settingsTab: string;
+  boardInsightsOpen: boolean;
+  setBoardInsightsOpen: (b: boolean) => void;
+  tasks: any[];
+  setTasks: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 export function AppRouter({
@@ -84,6 +88,10 @@ export function AppRouter({
   profileOrigin,
   documentsTab,
   settingsTab,
+  boardInsightsOpen,
+  setBoardInsightsOpen,
+  tasks,
+  setTasks,
 }: AppRouterProps) {
   // Bootstrap/Auth pages
   if (page === "login") {
@@ -136,6 +144,10 @@ export function AppRouter({
           setShowCreateDiscussion={setShowCreateDiscussion}
           setAttendanceSection={setAttendanceSection}
           setLeaveSection={setLeaveSection}
+          boardInsightsOpen={boardInsightsOpen}
+          setBoardInsightsOpen={setBoardInsightsOpen}
+          tasks={tasks}
+          setTasks={setTasks}
         />
       );
     case "organization":
@@ -169,7 +181,7 @@ export function AppRouter({
         />
       );
     case "tasks":
-      return <TasksPage navigate={navigate} activeTab={tasksTab} />;
+      return <TasksPage navigate={navigate} activeTab={tasksTab} tasks={tasks} setTasks={setTasks} />;
     case "employee-profile":
       return (
         <EmployeeProfilePage

@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Clock, Plus, Send, Check, X, Phone } from "lucide-react";
 import { FeedPost, Employee, AppPage } from "@/shared/types";
+import { TeamTask } from "../types";
 import { cn } from "@/shared/utils";
-import { Btn, Modal, Drawer, InputField, SelectField, Avt } from "@/shared/components";
+import { Btn, Modal, Drawer, InputField, SelectField, Avt, StatusBadge } from "@/shared/components";
 import { OverviewTab } from "../components/overview/overview-tab";
 import { ReporteesTab } from "../components/reportees/reportees-tab";
 import { ApprovalsTab } from "../components/approvals/approvals-tab";
 import { TasksTab } from "../components/tasks/tasks-tab";
+import { BoardInsightsPanel } from "../components/tasks/board-insights-panel";
+import { CreateTaskDrawer, TaskDetailsDrawer } from "@/modules/tasks";
 import { FeedTab } from "../components/feed/feed-tab";
 import { AnnouncementsTab } from "../components/announcements/announcements-tab";
-import { INITIAL_POSTS } from "../data/team-data";
+import { INITIAL_POSTS, TEAM_TASKS } from "../data/team-data";
 import { EMPLOYEES } from "@/modules/organization/data/employees";
 import { LEAVE_REQUESTS } from "@/modules/leave/data/leave-requests";
 
@@ -34,6 +37,10 @@ interface TeamPageProps {
   setShowCreateDiscussion: (b: boolean) => void;
   setAttendanceSection: (sec: "My Space" | "My Team") => void;
   setLeaveSection: (sec: "My Space" | "My Team") => void;
+  boardInsightsOpen: boolean;
+  setBoardInsightsOpen: (b: boolean) => void;
+  tasks: TeamTask[];
+  setTasks: React.Dispatch<React.SetStateAction<TeamTask[]>>;
 }
 
 export function TeamPage({
@@ -57,6 +64,10 @@ export function TeamPage({
   setShowCreateDiscussion,
   setAttendanceSection,
   setLeaveSection,
+  boardInsightsOpen,
+  setBoardInsightsOpen,
+  tasks: teamTasks,
+  setTasks: setTeamTasks,
 }: TeamPageProps) {
   const [tab, setTab] = useState("Overview");
 
@@ -69,6 +80,8 @@ export function TeamPage({
   const [desigFilter, setDesigFilter] = useState("All");
   const [selectedEmp, setSelectedEmp] = useState<Employee | null>(null);
   const [teamReqs, setTeamReqs] = useState(LEAVE_REQUESTS);
+
+
   const [tApproveId, setTApproveId] = useState<string | null>(null);
   const [tRejectId, setTRejectId] = useState<string | null>(null);
   const [tRejectReason, setTRejectReason] = useState("");
@@ -79,6 +92,14 @@ export function TeamPage({
   const [showCallModal, setShowCallModal] = useState(false);
   const [showAssignTask, setShowAssignTask] = useState(false);
   const [showAssignShift, setShowAssignShift] = useState(false);
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
+
+
 
   // --- FEED COLLABORATION SPACE STATE ---
   const [posts, setPosts] = useState<FeedPost[]>(INITIAL_POSTS);
@@ -105,13 +126,7 @@ export function TeamPage({
     }
   }, [showCreateDiscussion]);
 
-  useEffect(() => {
-    if (showAssignTask) {
-      setActiveModal("assign-task");
-    } else if (activeModal === "assign-task") {
-      setActiveModal(null);
-    }
-  }, [showAssignTask]);
+
 
   useEffect(() => {
     if (showAssignShift) {
@@ -221,6 +236,7 @@ export function TeamPage({
             setAttendanceSection={setAttendanceSection}
             setLeaveSection={setLeaveSection}
             navigate={navigate}
+            tasks={teamTasks}
           />
         )}
 
@@ -265,156 +281,63 @@ export function TeamPage({
 
         {/* ── TASKS TAB ── */}
         {tab === "Tasks" && (
-          <TasksTab search={search} setSelectedTeamTask={setSelectedTeamTask} />
+          <TasksTab
+            search={search}
+            setSelectedTeamTask={setSelectedTeamTask}
+            tasks={teamTasks}
+            setTasks={setTeamTasks}
+          />
         )}
       </div>
 
-      {/* ── TeamPage: Task Detail Drawer ── */}
-      <Drawer
+      {/* ── TeamPage: Task Details Drawer ── */}
+      <TaskDetailsDrawer
         isOpen={!!selectedTeamTask}
         onClose={() => setSelectedTeamTask(null)}
-        title={selectedTeamTask?.title || "Task Details"}
-        avatar={
-          <div className="w-10 h-10 rounded-full bg-[#5B57E8] text-white text-sm font-semibold flex items-center justify-center">
-            AA
-          </div>
-        }
-        headerAddon={
-          selectedTeamTask ? (
-            <StatusBadge status={selectedTeamTask.status} />
-          ) : null
-        }
-        footer={
-          <Btn variant="outline" onClick={() => setSelectedTeamTask(null)}>
-            Close Details
-          </Btn>
-        }
-      >
-        {selectedTeamTask && (
-          <div className="space-y-6 text-left">
-            <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-4">
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                Task Assignment
-              </h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
-                    Assigned To
-                  </p>
-                  <p className="text-xs font-semibold text-gray-808 mt-1">
-                    {selectedTeamTask.assignee}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
-                    Department
-                  </p>
-                  <p className="text-xs font-semibold text-gray-850 mt-1">
-                    {selectedTeamTask.dept}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
-                    Due Date
-                  </p>
-                  <p className="text-xs font-semibold text-gray-855 mt-1">
-                    {selectedTeamTask.due}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
-                    Priority
-                  </p>
-                  <p className="text-xs font-semibold text-gray-855 mt-1">
-                    <span
-                      className={cn(
-                        "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
-                        selectedTeamTask.priority === "High"
-                          ? "bg-red-50 text-red-500"
-                          : selectedTeamTask.priority === "Medium"
-                          ? "bg-amber-50 text-amber-500"
-                          : "bg-gray-100 text-gray-400"
-                      )}
-                    >
-                      {selectedTeamTask.priority}
-                    </span>
-                  </p>
-                </div>
-              </div>
-            </div>
+        task={selectedTeamTask}
+        onUpdateTask={(updatedTask) => {
+          setTeamTasks((prev) =>
+            prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+          );
+          setSelectedTeamTask(updatedTask);
+        }}
+      />
 
-            <div className="bg-white rounded-xl border border-gray-150 p-4 shadow-sm space-y-2">
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                Description
-              </h4>
-              <p className="text-xs text-gray-700 leading-relaxed font-semibold">
-                Please complete the reviews and log the results in the system.
-                Follow the standard guidelines for evaluations.
-              </p>
-            </div>
-          </div>
-        )}
-      </Drawer>
-
-      {/* ── TeamPage: Assign Task Modal ── */}
-      {activeModal === "assign-task" && (
-        <Modal
-          title="Assign Task"
-          onClose={() => {
-            setShowAssignTask(false);
-            handleCloseModal();
-          }}
-        >
-          <div className="space-y-3">
-            <InputField
-              label="Task Title"
-              placeholder="e.g. Complete Q3 Performance Review…"
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <SelectField label="Priority">
-                <option>Medium</option>
-                <option>High</option>
-                <option>Low</option>
-                <option>Critical</option>
-              </SelectField>
-              <SelectField label="Category">
-                <option>Admin</option>
-                <option>Project</option>
-                <option>Compliance</option>
-                <option>Training</option>
-              </SelectField>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <InputField label="Due Date" type="date" />
-              <SelectField label="Linked To">
-                <option>None</option>
-                <option>Q3 Review</option>
-                <option>Onboarding</option>
-              </SelectField>
-            </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-              <Btn
-                variant="outline"
-                onClick={() => {
-                  setShowAssignTask(false);
-                  handleCloseModal();
-                }}
-              >
-                Cancel
-              </Btn>
-              <Btn
-                onClick={() => {
-                  setShowAssignTask(false);
-                  handleCloseModal();
-                }}
-              >
-                <Plus size={13} />
-                Assign Task
-              </Btn>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {/* ── TeamPage: Create Task Drawer ── */}
+      <CreateTaskDrawer
+        isOpen={showCreateTask}
+        onClose={() => setShowCreateTask(false)}
+        onCreate={(taskData) => {
+          const newTaskId = `TT${Date.now()}`;
+          const taskIndex = teamTasks.length + 1;
+          const newTask: TeamTask = {
+            ...taskData,
+            id: newTaskId,
+            key: `TASK-${taskIndex}`,
+            createdAt: new Date().toISOString(),
+            originalEstimateMinutes: 0,
+            totalLoggedMinutes: 0,
+            remainingEstimateMinutes: 0,
+            comments: [],
+            workLogs: [],
+            activity: [
+              {
+                id: `act-${Date.now()}`,
+                taskId: newTaskId,
+                userId: "E004",
+                userName: "Alex Admin",
+                userInitials: "AA",
+                type: "created",
+                details: "Task created by Alex Admin",
+                createdAt: new Date().toISOString()
+              }
+            ]
+          };
+          setTeamTasks((prev) => [newTask, ...prev]);
+          setShowCreateTask(false);
+          triggerToast("Task created successfully.");
+        }}
+      />
 
       {/* ── TeamPage: Assign Shift Modal ── */}
       {activeModal === "assign-shift" && selectedEmp && (
@@ -736,6 +659,20 @@ export function TeamPage({
             </div>
           </div>
         </Modal>
+      )}
+      {/* Board Insights Right Panel */}
+      {tab === "Tasks" && (
+        <BoardInsightsPanel
+          isOpen={boardInsightsOpen}
+          onClose={() => setBoardInsightsOpen(false)}
+          tasks={teamTasks}
+          onSelectTask={setSelectedTeamTask}
+        />
+      )}
+      {toastMessage && (
+        <div className="fixed bottom-5 right-5 z-[200] bg-[#111827] text-white text-xs font-semibold px-4.5 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-bounce">
+          <span>{toastMessage}</span>
+        </div>
       )}
     </div>
   );
