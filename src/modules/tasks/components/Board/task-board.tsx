@@ -1,30 +1,46 @@
 import React, { useState } from "react";
-import { CalendarDays, MessageSquare, Paperclip, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { CalendarDays, MessageSquare, Paperclip } from "lucide-react";
 import { cn } from "@/shared/utils";
 import { TeamTask, TaskStatus } from "../../types";
 import { Avt } from "@/shared/components";
 import { EMP_COLORS } from "@/shared/constants/colors";
 
-interface TasksTabProps {
+interface TaskBoardProps {
   search: string;
-  setSelectedTeamTask: (task: any) => void;
+  setSelectedTask: (task: TeamTask) => void;
   tasks: TeamTask[];
   setTasks: React.Dispatch<React.SetStateAction<TeamTask[]>>;
+  assigneeFilter?: string; // Optional assignee email/ID/name to filter
+  priorityFilter?: string;
+  deptFilter?: string;
+  statusFilter?: string;
+  dueDateFilter?: string;
+  reporterFilter?: string;
+  labelFilter?: string;
+  archivedFilter?: string;
 }
 
-export function TasksTab({
+export function TaskBoard({
   search = "",
-  setSelectedTeamTask,
+  setSelectedTask,
   tasks = [],
   setTasks,
-}: TasksTabProps) {
+  assigneeFilter,
+  priorityFilter = "All",
+  deptFilter = "All",
+  statusFilter = "All",
+  dueDateFilter = "All",
+  reporterFilter = "All",
+  labelFilter = "All",
+  archivedFilter = "All",
+}: TaskBoardProps) {
   const [draggedOverCol, setDraggedOverCol] = useState<string | null>(null);
 
-  // Overdue detection: Due Date < Today AND Status != Completed
+  // Overdue detection: Due Date < Today AND Status != Completed AND Status != Archived
   const isTaskOverdue = (t: TeamTask) => {
-    if (t.status === "Done") return false;
+    if (t.status === "Done" || t.status === "Archived") return false;
     if (!t.dueDate) return false;
-    const today = new Date();
+    const today = new Date("2026-07-05"); // Using reference date consistency
     today.setHours(0, 0, 0, 0);
     const due = new Date(t.dueDate);
     return due < today;
@@ -48,15 +64,90 @@ export function TasksTab({
 
   // Distribute tasks to columns
   const getColumnTasks = (colId: string) => {
-    // Filter tasks based on Search query (match title, assignee, or label)
-    const filteredBySearch = tasks.filter(
-      (t) =>
-        t.title.toLowerCase().includes(search.toLowerCase()) ||
-        t.assignee.toLowerCase().includes(search.toLowerCase()) ||
-        (t.labels && t.labels.some((l) => l.toLowerCase().includes(search.toLowerCase())))
-    );
+    let filtered = tasks;
 
-    return filteredBySearch.filter((t) => {
+    // Filter by Assignee if requested (My Space context)
+    if (assigneeFilter) {
+      filtered = filtered.filter(
+        (t) =>
+          t.assigneeId === assigneeFilter ||
+          t.assigneeName === assigneeFilter ||
+          t.assignee === assigneeFilter
+      );
+    } else if (assigneeFilter === "") {
+      // empty filter means unassigned or custom
+    }
+
+    // Filter by Priority
+    if (priorityFilter && priorityFilter !== "All") {
+      filtered = filtered.filter((t) => t.priority === priorityFilter);
+    }
+
+    // Filter by Dept
+    if (deptFilter && deptFilter !== "All") {
+      filtered = filtered.filter((t) => t.dept === deptFilter);
+    }
+
+    // Filter by Status
+    if (statusFilter && statusFilter !== "All") {
+      filtered = filtered.filter((t) => t.status === statusFilter);
+    }
+
+    // Filter by Reporter
+    if (reporterFilter && reporterFilter !== "All") {
+      filtered = filtered.filter((t) => t.reporterId === reporterFilter || t.reporterName === reporterFilter);
+    }
+
+    // Filter by Label
+    if (labelFilter && labelFilter !== "All") {
+      filtered = filtered.filter((t) => t.labels && t.labels.includes(labelFilter));
+    }
+
+    // Filter by Due Date
+    if (dueDateFilter && dueDateFilter !== "All") {
+      const today = new Date("2026-07-05");
+      today.setHours(0, 0, 0, 0);
+
+      filtered = filtered.filter((t) => {
+        if (!t.dueDate) return false;
+        const due = new Date(t.dueDate);
+        due.setHours(0, 0, 0, 0);
+
+        if (dueDateFilter === "Overdue") {
+          return due < today && t.status !== "Done" && t.status !== "Archived";
+        }
+        if (dueDateFilter === "Due Today") {
+          return due.getTime() === today.getTime();
+        }
+        if (dueDateFilter === "Due This Week") {
+          const diffDays = (due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+          return diffDays >= 0 && diffDays <= 7;
+        }
+        return true;
+      });
+    }
+
+    // Filter by Archive State
+    if (archivedFilter && archivedFilter !== "All") {
+      if (archivedFilter === "Active Only") {
+        filtered = filtered.filter((t) => t.status !== "Archived");
+      } else if (archivedFilter === "Archived Only") {
+        filtered = filtered.filter((t) => t.status === "Archived");
+      }
+    }
+
+    // Filter based on Search query (match title, assignee, or label)
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          t.assignee.toLowerCase().includes(q) ||
+          (t.labels && t.labels.some((l) => l.toLowerCase().includes(q)))
+      );
+    }
+
+    return filtered.filter((t) => {
       if (colId === "Archived") return t.status === "Archived";
       if (colId === "Done") return t.status === "Done";
       if (t.status === "Archived" || t.status === "Done") return false;
@@ -73,8 +164,9 @@ export function TasksTab({
 
   // Drag and Drop handlers
   const handleMoveTask = (taskId: string, targetColId: string) => {
-    const todayStr = new Date().toISOString().split("T")[0];
-    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+    const yesterday = new Date(Date.now() - 86400000);
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
+    const yesterdayDisplay = yesterday.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
     setTasks((prev) =>
       prev.map((t) => {
@@ -101,8 +193,7 @@ export function TasksTab({
         } else if (targetColId === "Overdue") {
           nextStatus = "Todo";
           nextDueDate = yesterdayStr;
-          const yesterday = new Date(Date.now() - 86400000);
-          nextDue = yesterday.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          nextDue = yesterdayDisplay;
         } else if (targetColId === "Done") {
           nextStatus = "Done";
         } else if (targetColId === "Archived") {
@@ -147,18 +238,17 @@ export function TasksTab({
       case "Medium":
         return "bg-amber-50 text-amber-600 border border-amber-100";
       default:
-        return "bg-gray-50 text-gray-500 border border-gray-150";
+        return "bg-gray-50 text-gray-555 border border-gray-150";
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#F8FAFC] border-t border-gray-200 text-left">
-      {/* Board columns view wrapper */}
+    <div className="flex flex-col h-full bg-[#F8FAFC] text-left">
       <div className="flex-1 overflow-x-auto p-6 flex gap-5 items-start select-none">
         {columns.map((col) => {
           const colTasks = getColumnTasks(col.id);
           const isOver = draggedOverCol === col.id;
-          
+
           return (
             <div
               key={col.id}
@@ -213,7 +303,7 @@ export function TasksTab({
                           .join("")
                           .toUpperCase()
                       : "UN";
-                    
+
                     const charSum = t.assignee
                       ? t.assignee.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)
                       : 0;
@@ -226,7 +316,7 @@ export function TasksTab({
                         onDragStart={(e) => {
                           e.dataTransfer.setData("taskId", t.id);
                         }}
-                        onClick={() => setSelectedTeamTask(t)}
+                        onClick={() => setSelectedTask(t)}
                         className={cn(
                           "bg-white border rounded-xl p-4 shadow-sm hover:shadow-md hover:border-[#5C5CFF]/45 transition-all cursor-grab active:cursor-grabbing text-left space-y-3 relative group",
                           isBlocked ? "border-red-200 bg-red-50/5" : "border-gray-150",
@@ -243,8 +333,7 @@ export function TasksTab({
                           >
                             {t.priority}
                           </span>
-                          
-                          {/* Assignee Avatar */}
+
                           <div className="flex items-center gap-1">
                             <Avt
                               initials={initials}
@@ -280,7 +369,7 @@ export function TasksTab({
                             {t.labels.map((l) => (
                               <span
                                 key={l}
-                                className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-50 border border-gray-150 text-gray-500"
+                                className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-55 border border-gray-150 text-gray-500"
                               >
                                 {l}
                               </span>
@@ -311,13 +400,13 @@ export function TasksTab({
 
                         {/* Footer details: Due date & activity counters */}
                         <div className="flex justify-between items-center text-[10px] text-gray-400 pt-2.5 border-t border-gray-100 font-medium">
-                          <div className="flex items-center gap-1 text-gray-500">
+                          <div className="flex items-center gap-1 text-gray-555">
                             <CalendarDays size={11} />
-                            <span className="font-semibold text-gray-400">
+                            <span className="font-semibold text-gray-450">
                               {t.due || "Jul 8"}
                             </span>
                           </div>
-                          
+
                           <div className="flex items-center gap-2 font-semibold">
                             {commentCount > 0 && (
                               <span className="flex items-center gap-0.5" title={`${commentCount} comments`}>

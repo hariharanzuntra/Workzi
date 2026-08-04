@@ -23,6 +23,7 @@ import { EMP_COLORS } from "@/shared/constants/colors";
 import { LEAVE_REQUESTS } from "@/modules/leave/data/leave-requests";
 import { Avt, StatusBadge, Btn, Modal, SelectField, InputField, Drawer } from "@/shared/components";
 import { ApprovalList, ApprovalFilters, ApprovalDetailsDrawer } from "../components/approvals";
+import { MyTasksPage } from "@/modules/tasks";
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 interface AppComment {
@@ -325,9 +326,17 @@ export function MySpacePage({
   setAttPeriodProp,
   hideLeaveHeader = false,
   leaveViewProp,
-  setLeaveViewProp
+  setLeaveViewProp,
+  tasks,
+  setTasks,
+  currentUser,
+  tasksSearch = "",
+  showTasksFilter = false,
+  setShowTasksFilter = () => {},
+  showCreateTask = false,
+  setShowCreateTask = () => {}
 }: {
-  navigate: (p: AppPage) => void;
+  navigate: (p: AppPage, emp?: any, tabOrSection?: string) => void;
   activeTab?: string;
   hideTabs?: boolean;
   hideAttendanceHeader?: boolean;
@@ -338,6 +347,14 @@ export function MySpacePage({
   hideLeaveHeader?: boolean;
   leaveViewProp?: "Balance" | "Requests" | "Calendar" | "Analytics" | "Status";
   setLeaveViewProp?: (v: "Balance" | "Requests" | "Calendar" | "Analytics" | "Status") => void;
+  tasks: any[];
+  setTasks: React.Dispatch<React.SetStateAction<any[]>>;
+  currentUser: { name: string; id: string; initials?: string };
+  tasksSearch?: string;
+  showTasksFilter?: boolean;
+  setShowTasksFilter?: (b: boolean) => void;
+  showCreateTask?: boolean;
+  setShowCreateTask?: (b: boolean) => void;
 }) {
   const MS_TABS = ["Dashboard","Attendance","Leave","Tasks","Approvals","Calendar"];
   const [tab, setTab] = useState(activeTab || "Dashboard");
@@ -425,16 +442,21 @@ export function MySpacePage({
   };
 
   // Tasks
-  const TASK_VIEWS = ["Assigned","In Progress","Completed","Overdue","Archived"];
-  const [myTasks, setMyTasks] = useState([
-    { id:"TASK-001", title:"Review Q2 attendance report",        priority:"High",   status:"Assigned",    reporter:"David Chen",    assignee:"Alex Admin", created:"Jun 28", updated:"Jul 1",  due:"Jul 1",  done:false, overdue:true  },
-    { id:"TASK-002", title:"Update leave policy draft",          priority:"High",   status:"In Progress", reporter:"Jennifer Walsh", assignee:"Alex Admin", created:"Jun 29", updated:"Jul 1",  due:"Jul 3",  done:false, overdue:false },
-    { id:"TASK-003", title:"Onboard 3 new engineering hires",    priority:"Medium", status:"Assigned",    reporter:"David Chen",    assignee:"Alex Admin", created:"Jul 1",  updated:"Jul 1",  due:"Jul 8",  done:false, overdue:false },
-    { id:"TASK-004", title:"Reply to HR audit request",          priority:"Low",    status:"Overdue",     reporter:"Jennifer Walsh", assignee:"Alex Admin", created:"Jun 20", updated:"Jun 30", due:"Jun 30", done:false, overdue:true  },
-    { id:"TASK-005", title:"Configure geo-fence – Austin office",priority:"Low",    status:"Assigned",    reporter:"Carlos Rivera",  assignee:"Alex Admin", created:"Jul 1",  updated:"Jul 1",  due:"Jul 15", done:false, overdue:false },
-    { id:"TASK-006", title:"Schedule performance reviews",       priority:"Medium", status:"Completed",   reporter:"Aisha Thompson", assignee:"Alex Admin", created:"Jun 25", updated:"Jul 1",  due:"Jul 20", done:true,  overdue:false },
-    { id:"TASK-007", title:"Review updated department org chart",priority:"Medium", status:"Assigned",    reporter:"David Chen",    assignee:"Alex Admin", created:"Jun 26", updated:"Jun 26", due:"Jul 5",  done:false, overdue:false },
-  ]);
+  const isTaskOverdue = (t: any) => {
+    if (t.status === "Done" || t.status === "Archived") return false;
+    if (!t.dueDate) return false;
+    const today = new Date("2026-07-05");
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(t.dueDate);
+    return due < today;
+  };
+
+  const myTasks = (tasks || []).filter(
+    (t) =>
+      t.assigneeId === currentUser.id ||
+      t.assigneeName === currentUser.name ||
+      t.assignee === currentUser.name
+  );
   const [taskView,        setTaskView]        = useState("Assigned");
   const [activeTaskId,    setActiveTaskId]    = useState<string|null>(null);
   const [taskSearch,      setTaskSearch]      = useState("");
@@ -483,17 +505,50 @@ export function MySpacePage({
   const filteredTasks = getFilteredTasks();
   const activeTask    = myTasks.find(t => t.id === activeTaskId) || null;
 
-  const toggleTask = (id: string) => setMyTasks(ts => ts.map(t => t.id === id ? { ...t, done:!t.done, status:t.done?"Assigned":"Completed" } : t));
+  const toggleTask = (id: string) => {
+    setTasks(ts => ts.map(t => t.id === id ? { ...t, status: t.status === "Done" ? "Todo" : "Done" } : t));
+  };
   const addTaskComment = (tid: string) => {
     if (!taskComment.trim()) return;
-    setTaskComments(tc => ({ ...tc, [tid]: [...(tc[tid]||[]), { id:`c${Date.now()}`, author:"Alex Admin", text:taskComment, time:"Just now" }] }));
+    setTaskComments(tc => ({ ...tc, [tid]: [...(tc[tid]||[]), { id:`c${Date.now()}`, author: currentUser.name, text:taskComment, time:"Just now" }] }));
     setTaskComment("");
   };
   const toggleChecklist = (tid: string, iid: string) => setTaskChecklists(tl => ({ ...tl, [tid]: (tl[tid]||[]).map(i => i.id === iid ? { ...i, done:!i.done } : i) }));
   const createTask = () => {
     if (!newTaskTitle.trim()) return;
-    const id = `TASK-${String(myTasks.length + 1).padStart(3,"0")}`;
-    setMyTasks(ts => [...ts, { id, title:newTaskTitle, priority:"Medium", status:"Assigned", reporter:"Alex Admin", assignee:"Alex Admin", created:"Jul 1", updated:"Jul 1", due:"Jul 10", done:false, overdue:false }]);
+    const newTaskId = `TT${Date.now()}`;
+    const taskIndex = tasks.length + 1;
+    const newTask = {
+      id: newTaskId,
+      key: `TASK-${taskIndex}`,
+      title: newTaskTitle,
+      priority: "Medium" as const,
+      status: "Todo" as const,
+      reporterId: currentUser.id,
+      reporterName: currentUser.name,
+      assignee: currentUser.name,
+      assigneeId: currentUser.id,
+      dept: "HR",
+      due: "Jul 10",
+      dueDate: "2026-07-10",
+      createdAt: new Date().toISOString(),
+      comments: [],
+      attachments: [],
+      workLogs: [],
+      activity: [
+        {
+          id: `act-${Date.now()}`,
+          taskId: newTaskId,
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userInitials: currentUser.initials || "UN",
+          type: "created" as const,
+          details: `Task created by ${currentUser.name}`,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+    setTasks(ts => [newTask, ...ts]);
     setNewTaskTitle(""); setShowNewTask(false);
   };
   const toggleSelectTask = (id: string) => setSelectedTasks(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);

@@ -23,6 +23,7 @@ export function Sidebar({
   collapsed,
   onToggle,
   onLogout,
+  style,
 }: {
   page: AppPage;
   navigate: (p: AppPage, emp?: any, tabOrSection?: string) => void;
@@ -33,6 +34,7 @@ export function Sidebar({
   leaveSection: "My Space" | "My Team";
   teamSection: "Overview" | "Management";
   orgSection: "Overview" | "Management";
+  style?: React.CSSProperties;
 }) {
   const isActive = (p: AppPage) =>
     page === p ||
@@ -71,9 +73,11 @@ export function Sidebar({
 
   return (
     <div
+      style={style}
       className={cn(
-        "bg-white border-r border-gray-200 flex flex-col flex-shrink-0 transition-all duration-200 overflow-hidden",
-        collapsed ? "w-14" : "w-56"
+        "h-full bg-white border-r border-gray-200 flex flex-col flex-shrink-0 overflow-hidden",
+        (!style || style.width === undefined) && (collapsed ? "w-14" : "w-56"),
+        (!style || style.transition === undefined) && "transition-all duration-200"
       )}
     >
       <div className="h-14 flex items-center gap-2.5 px-3.5 border-b border-gray-200 flex-shrink-0">
@@ -111,40 +115,10 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="border-t border-gray-200 p-2 flex-shrink-0">
-        <div
-          className={cn(
-            "flex items-center gap-2.5 px-2 py-2 rounded-md cursor-pointer hover:bg-gray-50"
-          )}
-          onClick={() => navigate("profile")}
-        >
-          <Avt initials="AA" color="#5C5CFF" size="sm" />
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-gray-800 truncate">
-                Alex Admin
-              </p>
-              <p className="text-[10px] text-gray-400 truncate">
-                Administrator
-              </p>
-            </div>
-          )}
-          {!collapsed && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onLogout();
-              }}
-              className="p-1 rounded hover:bg-red-50 hover:text-red-500 text-gray-400 transition-colors flex-shrink-0"
-              title="Logout"
-            >
-              <LogOut size={14} />
-            </button>
-          )}
-        </div>
+      <div className="p-2 flex-shrink-0 flex items-center justify-center">
         <button
           onClick={onToggle}
-          className="w-full flex items-center justify-center py-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md mt-1 transition-colors"
+          className="w-full flex items-center justify-center py-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
         >
           {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>

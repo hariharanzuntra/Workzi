@@ -123,7 +123,7 @@ export function AttentionItems({
             key={t.key}
             onClick={() => setActiveTab(t.key)}
             className={cn(
-              "text-[13px] font-medium pb-2 border-b-2 transition-all relative flex items-center gap-1 bg-transparent border-transparent text-gray-500 cursor-pointer hover:text-[#5C5CFF]",
+              "text-[13px] font-medium pb-2 border-b-2 transition-all relative flex items-center gap-1 bg-transparent border-transparent text-gray-555 cursor-pointer hover:text-[#5C5CFF]",
               activeTab === t.key
                 ? "text-[#5C5CFF] border-[#5C5CFF] font-semibold"
                 : "border-transparent"
@@ -150,7 +150,7 @@ export function AttentionItems({
           (() => {
             const empty = getEmptyStateContent();
             return (
-              <div className="border border-dashed border-gray-200 rounded-xl p-6 text-center space-y-1">
+              <div className="border border-dashed border-gray-255 bg-white/40 rounded-xl p-6 text-center space-y-1">
                 <AlertCircle size={20} className="mx-auto text-gray-400 mb-1" />
                 <p className="text-xs font-semibold text-gray-700">{empty.title}</p>
                 <p className="text-[11px] text-gray-400 leading-relaxed">{empty.desc}</p>
@@ -169,21 +169,21 @@ export function AttentionItems({
               >
                 <div className="space-y-1">
                   <div className="flex items-start justify-between gap-2">
-                    <h5 className="text-xs font-semibold text-gray-900 leading-snug">
+                    <h5 className="text-xs font-bold text-gray-900 leading-snug">
                       {t.title}
                     </h5>
                     {t.isFlagged && (
                       <Flag size={12} className="text-red-500 fill-red-500 flex-shrink-0" />
                     )}
                   </div>
-                  <p className="text-[11px] text-gray-500">
+                  <p className="text-[11px] text-gray-500 font-medium">
                     Assigned to: {t.assignee}
                   </p>
                 </div>
 
                 {/* Stuck info */}
                 {t.status === "In Progress" && (t.daysInStatus ?? 0) >= 5 && (
-                  <div className="bg-amber-50 border border-amber-100 rounded-lg p-2 text-[11px] text-amber-800 font-medium">
+                  <div className="bg-amber-50 border border-amber-100 rounded-lg p-2 text-[11px] text-amber-800 font-semibold">
                     Stuck in “In Progress” for {t.daysInStatus} days
                   </div>
                 )}
@@ -195,12 +195,12 @@ export function AttentionItems({
                       <ShieldAlert size={12} />
                       <span>Blocked</span>
                     </div>
-                    <p className="text-red-600 font-medium">{t.blockedReason}</p>
+                    <p className="text-red-600 font-semibold">{t.blockedReason}</p>
                   </div>
                 )}
 
-                <div className="flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-100">
-                  <div className="flex items-center gap-1 font-medium">
+                <div className="flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-100 font-medium">
+                  <div className="flex items-center gap-1">
                     <Calendar size={12} className={cn(isTaskOverdue ? "text-red-500" : "text-gray-400")} />
                     {isTaskOverdue ? (
                       <span className="text-red-500 font-semibold">
@@ -214,7 +214,7 @@ export function AttentionItems({
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase",
+                        "text-[9px] font-extrabold px-1.5 py-0.5 rounded-full uppercase",
                         t.priority === "High"
                           ? "bg-red-50 text-red-500"
                           : t.priority === "Medium"
@@ -226,7 +226,7 @@ export function AttentionItems({
                     </span>
                     <span
                       className={cn(
-                        "text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase",
+                        "text-[9px] font-extrabold px-1.5 py-0.5 rounded-full uppercase",
                         t.status === "Done"
                           ? "bg-green-50 text-green-600"
                           : t.status === "Overdue"

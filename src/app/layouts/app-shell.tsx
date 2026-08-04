@@ -20,7 +20,8 @@ import {
   EMPLOYEES, NOTIFICATIONS,
   cn
 } from "@/app/data";
-import { Sidebar } from "./sidebar";
+import { ResizableSidebar } from "@/shared/layout/sidebar/ResizableSidebar";
+import { useResizableSidebar } from "@/shared/hooks/useResizableSidebar";
 import { AIPanel } from "./ai-panel";
 import { NotificationsPanel } from "./notifications-panel";
 import { QuickActionsMenu } from "./quick-actions-menu"; // Wait, in App.tsx it was import { QuickActionsMenu } from "./layouts/quick-actions-menu"; since they are both in layouts, it's ./quick-actions-menu
@@ -30,7 +31,19 @@ import { AppRouter } from "../router/app-router";
 export function AppShell() {
   const [page, setPage] = useState<AppPage>("login");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee>(EMPLOYEES[0]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const {
+    width: sidebarWidth,
+    isDragging: isSidebarDragging,
+    isCollapsed: isSidebarCollapsed,
+    isHidden: isSidebarHidden,
+    isMobile: isMobileView,
+    handlePointerDown: handleSidebarResize,
+    handlePointerMove: handleSidebarPointerMove,
+    handlePointerUp: handleSidebarPointerUp,
+    toggleSidebar,
+    toggleCollapse,
+  } = useResizableSidebar();
   const [aiOpen, setAiOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
@@ -220,10 +233,10 @@ export function AppShell() {
   const [boardInsightsOpen, setBoardInsightsOpen] = useState(false);
 
   useEffect(() => {
-    if (page !== "team" || teamTab !== "Tasks") {
+    if (page !== "tasks") {
       setBoardInsightsOpen(false);
     }
-  }, [page, teamTab]);
+  }, [page]);
 
   const [attToast, setAttToast] = useState<string|null>(null);
   const attMsg = (m:string) => { setAttToast(m); setTimeout(()=>setAttToast(null),2500); };
@@ -379,7 +392,7 @@ export function AppShell() {
     activeHeaderTab = leaveTab;
     onHeaderTabChange = setLeaveTab;
   } else if (page === "team") {
-    headerTabs = ["Overview", "Reportees", "Approvals", "Tasks", "Feed", "Announcements"];
+    headerTabs = ["Overview", "Reportees", "Approvals", "Feed", "Announcements"];
     activeHeaderTab = teamTab;
     onHeaderTabChange = setTeamTab;
   } else if (page === "organization") {
@@ -537,48 +550,77 @@ export function AppShell() {
           </button>
         </>
       );
-    } else if (teamTab === "Tasks") {
-      headerToolbar = (
-        <>
-          <div className="relative w-64 h-[38px] flex items-center gap-2 px-3 bg-[#F6F7F9] border border-[#E8E9ED] rounded-[9px]">
-            <Search size={14} className="text-[#9CA0AB] flex-shrink-0" />
-            <input
-              type="text"
-              placeholder="Search Tasks..."
-              value={teamSearch}
-              onChange={(e) => setTeamSearch(e.target.value)}
-              className="w-full bg-transparent text-[13px] text-[#16181D] placeholder-[#9CA0AB] outline-none"
-            />
-          </div>
-          <div className="flex-1" />
-          <button
-            onClick={() => setShowTasksFilter(true)}
-            className="h-10 w-10 flex items-center justify-center p-0 rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] hover:bg-gray-55 transition-colors cursor-pointer"
-          >
-            <SlidersHorizontal size={16} />
-          </button>
-          <button
-            onClick={() => setBoardInsightsOpen(v => !v)}
-            title="Board insights"
-            className={cn(
-              "h-10 w-10 flex items-center justify-center p-0 rounded-[10px] border transition-colors cursor-pointer",
-              boardInsightsOpen
-                ? "border-[#5C5CFF] bg-[#EEF2FF] text-[#5C5CFF]"
-                : "border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] hover:bg-gray-55"
-            )}
-          >
-            <TrendingUp size={16} />
-          </button>
-          <button
-            onClick={() => setShowCreateTask(true)}
-            className="h-10 px-[18px] rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] text-[14px] font-semibold flex items-center gap-2 hover:bg-gray-55 transition-colors cursor-pointer"
-          >
-            <Plus size={16} strokeWidth={2.2} />
-            Create Task
-          </button>
-        </>
-      );
     }
+  } else if (page === "tasks") {
+    headerToolbar = (
+      <>
+        <div className="relative w-64 h-[38px] flex items-center gap-2 px-3 bg-[#F6F7F9] border border-[#E8E9ED] rounded-[9px]">
+          <Search size={14} className="text-[#9CA0AB] flex-shrink-0" />
+          <input
+            type="text"
+            placeholder="Search Tasks..."
+            value={tasksSearch}
+            onChange={(e) => setTasksSearch(e.target.value)}
+            className="w-full bg-transparent text-[13px] text-[#16181D] placeholder-[#9CA0AB] outline-none"
+          />
+        </div>
+        <div className="flex-1" />
+        <button
+          onClick={() => setShowTasksFilter(true)}
+          className="h-10 w-10 flex items-center justify-center p-0 rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] hover:bg-gray-55 transition-colors cursor-pointer"
+        >
+          <SlidersHorizontal size={16} />
+        </button>
+        <button
+          onClick={() => setBoardInsightsOpen(v => !v)}
+          title="Board insights"
+          className={cn(
+            "h-10 w-10 flex items-center justify-center p-0 rounded-[10px] border transition-colors cursor-pointer",
+            boardInsightsOpen
+              ? "border-[#5C5CFF] bg-[#EEF2FF] text-[#5C5CFF]"
+              : "border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] hover:bg-gray-55"
+          )}
+        >
+          <TrendingUp size={16} />
+        </button>
+        <button
+          onClick={() => setShowCreateTask(true)}
+          className="h-10 px-[18px] rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] text-[14px] font-semibold flex items-center gap-2 hover:bg-gray-55 transition-colors cursor-pointer"
+        >
+          <Plus size={16} strokeWidth={2.2} />
+          Create Task
+        </button>
+      </>
+    );
+  } else if (page === "my-space" && mySpaceTab === "Tasks") {
+    headerToolbar = (
+      <>
+        <div className="relative w-64 h-[38px] flex items-center gap-2 px-3 bg-[#F6F7F9] border border-[#E8E9ED] rounded-[9px]">
+          <Search size={14} className="text-[#9CA0AB] flex-shrink-0" />
+          <input
+            type="text"
+            placeholder="Search My Tasks..."
+            value={tasksSearch}
+            onChange={(e) => setTasksSearch(e.target.value)}
+            className="w-full bg-transparent text-[13px] text-[#16181D] placeholder-[#9CA0AB] outline-none"
+          />
+        </div>
+        <div className="flex-1" />
+        <button
+          onClick={() => setShowTasksFilter(true)}
+          className="h-10 w-10 flex items-center justify-center p-0 rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] hover:bg-gray-55 transition-colors cursor-pointer"
+        >
+          <SlidersHorizontal size={16} />
+        </button>
+        <button
+          onClick={() => setShowCreateTask(true)}
+          className="h-10 px-[18px] rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] text-[14px] font-semibold flex items-center gap-2 hover:bg-gray-55 transition-colors cursor-pointer"
+        >
+          <Plus size={16} strokeWidth={2.2} />
+          Create Task
+        </button>
+      </>
+    );
   } else if (page === "documents") {
     headerToolbar = (
       <>
@@ -619,19 +661,29 @@ export function AppShell() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      <Sidebar
+      <ResizableSidebar
         page={page}
         navigate={navigate}
-        collapsed={sidebarCollapsed}
-        onToggle={()=>setSidebarCollapsed(!sidebarCollapsed)}
-        onLogout={()=>setShowLogoutConfirm(true)}
+        onLogout={() => setShowLogoutConfirm(true)}
         attendanceSection={attendanceSection}
         leaveSection={leaveSection}
         teamSection={teamSection}
         orgSection={orgSection}
+        width={sidebarWidth}
+        isDragging={isSidebarDragging}
+        isCollapsed={isSidebarCollapsed}
+        isHidden={isSidebarHidden}
+        isMobile={isMobileView}
+        handlePointerDown={handleSidebarResize}
+        handlePointerMove={handleSidebarPointerMove}
+        handlePointerUp={handleSidebarPointerUp}
+        toggleSidebar={toggleSidebar}
+        toggleCollapse={toggleCollapse}
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <AppHeader
+          onMenuToggle={toggleSidebar}
+          isSidebarHidden={isSidebarHidden}
           title={headerTitle}
           workspaceSwitch={workspaceSwitch}
           tabs={headerTabs}
@@ -740,6 +792,9 @@ export function AppShell() {
             profileOrigin={profileOrigin}
             documentsTab={documentsTab}
             settingsTab={settingsTab}
+            tasksSearch={tasksSearch}
+            showTasksFilter={showTasksFilter}
+            setShowTasksFilter={setShowTasksFilter}
             boardInsightsOpen={boardInsightsOpen}
             setBoardInsightsOpen={setBoardInsightsOpen}
           />

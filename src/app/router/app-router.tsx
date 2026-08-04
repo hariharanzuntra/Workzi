@@ -51,6 +51,9 @@ interface AppRouterProps {
   setBoardInsightsOpen: (b: boolean) => void;
   tasks: any[];
   setTasks: React.Dispatch<React.SetStateAction<any[]>>;
+  tasksSearch: string;
+  showTasksFilter: boolean;
+  setShowTasksFilter: (b: boolean) => void;
 }
 
 export function AppRouter({
@@ -92,6 +95,9 @@ export function AppRouter({
   setBoardInsightsOpen,
   tasks,
   setTasks,
+  tasksSearch,
+  showTasksFilter,
+  setShowTasksFilter,
 }: AppRouterProps) {
   // Bootstrap/Auth pages
   if (page === "login") {
@@ -120,7 +126,20 @@ export function AppRouter({
   // Shell pages
   switch (page) {
     case "my-space":
-      return <MySpacePage navigate={navigate} activeTab={mySpaceTab} />;
+      return (
+        <MySpacePage
+          navigate={navigate}
+          activeTab={mySpaceTab}
+          tasks={tasks}
+          setTasks={setTasks}
+          currentUser={selectedEmployee || { name: "Alex Admin", id: "E004" }}
+          tasksSearch={tasksSearch}
+          showTasksFilter={showTasksFilter}
+          setShowTasksFilter={setShowTasksFilter}
+          showCreateTask={showCreateTask}
+          setShowCreateTask={setShowCreateTask}
+        />
+      );
     case "team":
       return (
         <TeamPage
@@ -181,7 +200,21 @@ export function AppRouter({
         />
       );
     case "tasks":
-      return <TasksPage navigate={navigate} activeTab={tasksTab} tasks={tasks} setTasks={setTasks} />;
+      return (
+        <TasksPage
+          navigate={navigate}
+          activeTab={tasksTab}
+          tasks={tasks}
+          setTasks={setTasks}
+          search={tasksSearch}
+          showTasksFilter={showTasksFilter}
+          setShowTasksFilter={setShowTasksFilter}
+          boardInsightsOpen={boardInsightsOpen}
+          setBoardInsightsOpen={setBoardInsightsOpen}
+          showCreateTask={showCreateTask}
+          setShowCreateTask={setShowCreateTask}
+        />
+      );
     case "employee-profile":
       return (
         <EmployeeProfilePage

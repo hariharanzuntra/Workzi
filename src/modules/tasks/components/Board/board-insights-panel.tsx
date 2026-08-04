@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Flag, HelpCircle } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/shared/utils";
 import { TeamTask } from "../../types";
 import { useTaskInsights } from "../../hooks/use-task-insights";
@@ -44,7 +44,7 @@ export function BoardInsightsPanel({
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-50 border-0 bg-transparent cursor-pointer flex items-center justify-center"
+          className="p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-55 border-0 bg-transparent cursor-pointer flex items-center justify-center"
         >
           <X size={16} />
         </button>
@@ -106,7 +106,7 @@ export function BoardInsightsPanel({
             ].map((p) => (
               <div
                 key={p.label}
-                className="flex items-center justify-between text-xs py-2.5 first:pt-0 last:pb-0"
+                className="flex items-center justify-between text-xs py-2.5 first:pt-0 last:pb-0 font-medium"
               >
                 <div className="flex items-center gap-2">
                   <span className={cn("w-2 h-2 rounded-full", p.color)} />

@@ -7,8 +7,6 @@ import { Btn, Modal, Drawer, InputField, SelectField, Avt, StatusBadge } from "@
 import { OverviewTab } from "../components/overview/overview-tab";
 import { ReporteesTab } from "../components/reportees/reportees-tab";
 import { ApprovalsTab } from "../components/approvals/approvals-tab";
-import { TasksTab } from "../components/tasks/tasks-tab";
-import { BoardInsightsPanel } from "../components/tasks/board-insights-panel";
 import { CreateTaskDrawer, TaskDetailsDrawer } from "@/modules/tasks";
 import { FeedTab } from "../components/feed/feed-tab";
 import { AnnouncementsTab } from "../components/announcements/announcements-tab";
@@ -278,66 +276,7 @@ export function TeamPage({
             rejectT={rejectT}
           />
         )}
-
-        {/* ── TASKS TAB ── */}
-        {tab === "Tasks" && (
-          <TasksTab
-            search={search}
-            setSelectedTeamTask={setSelectedTeamTask}
-            tasks={teamTasks}
-            setTasks={setTeamTasks}
-          />
-        )}
       </div>
-
-      {/* ── TeamPage: Task Details Drawer ── */}
-      <TaskDetailsDrawer
-        isOpen={!!selectedTeamTask}
-        onClose={() => setSelectedTeamTask(null)}
-        task={selectedTeamTask}
-        onUpdateTask={(updatedTask) => {
-          setTeamTasks((prev) =>
-            prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
-          );
-          setSelectedTeamTask(updatedTask);
-        }}
-      />
-
-      {/* ── TeamPage: Create Task Drawer ── */}
-      <CreateTaskDrawer
-        isOpen={showCreateTask}
-        onClose={() => setShowCreateTask(false)}
-        onCreate={(taskData) => {
-          const newTaskId = `TT${Date.now()}`;
-          const taskIndex = teamTasks.length + 1;
-          const newTask: TeamTask = {
-            ...taskData,
-            id: newTaskId,
-            key: `TASK-${taskIndex}`,
-            createdAt: new Date().toISOString(),
-            originalEstimateMinutes: 0,
-            totalLoggedMinutes: 0,
-            remainingEstimateMinutes: 0,
-            comments: [],
-            workLogs: [],
-            activity: [
-              {
-                id: `act-${Date.now()}`,
-                taskId: newTaskId,
-                userId: "E004",
-                userName: "Alex Admin",
-                userInitials: "AA",
-                type: "created",
-                details: "Task created by Alex Admin",
-                createdAt: new Date().toISOString()
-              }
-            ]
-          };
-          setTeamTasks((prev) => [newTask, ...prev]);
-          setShowCreateTask(false);
-          triggerToast("Task created successfully.");
-        }}
-      />
 
       {/* ── TeamPage: Assign Shift Modal ── */}
       {activeModal === "assign-shift" && selectedEmp && (

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Search, Plus, Bell, Settings, ChevronDown, User, Shield, Zap, Globe, LogOut,
   UserPlus, Building2, Clock, CheckCircle, Calendar, Gift, Megaphone, ClipboardList,
-  FileText, X, Bookmark, History, LayoutDashboard, Database, Info, Key, FileBarChart, Play, MessageSquare
+  FileText, X, Bookmark, History, LayoutDashboard, Database, Info, Key, FileBarChart, Play, MessageSquare,
+  Menu
 } from "lucide-react";
 import { cn, EMPLOYEES, DEPT_DIST, DOCUMENTS_LIST } from "./data";
 import { Avt } from "./ui";
@@ -136,7 +137,9 @@ export function AppHeader({
   onSettingsClick = () => {},
   onProfileClick = () => {},
   onLogout = () => {},
-  unreadNotifications = 0
+  unreadNotifications = 0,
+  onMenuToggle,
+  isSidebarHidden = false
 }: {
   title: string;
   workspaceSwitch?: React.ReactNode;
@@ -151,6 +154,8 @@ export function AppHeader({
   onProfileClick?: () => void;
   onLogout?: () => void;
   unreadNotifications?: number;
+  onMenuToggle?: () => void;
+  isSidebarHidden?: boolean;
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
@@ -439,7 +444,16 @@ export function AppHeader({
 
       {/* ROW 1: Primary Header */}
       <div className="h-[72px] flex items-center justify-between px-8 gap-6 border-b border-[#EEEFF2]">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          {onMenuToggle && (isSidebarHidden || (typeof window !== "undefined" && window.innerWidth < 1024)) && (
+            <button
+              onClick={onMenuToggle}
+              className="p-1.5 -ml-1 rounded-lg hover:bg-gray-55 text-[#565A66] hover:text-gray-800 transition-colors focus:outline-none flex items-center justify-center border border-[#E8E9ED] bg-white cursor-pointer"
+              title="Open Sidebar"
+            >
+              <Menu size={16} strokeWidth={2.2} />
+            </button>
+          )}
           <span className="text-[18px] font-semibold text-[#16181D] tracking-[-0.2px]">{title}</span>
           {workspaceSwitch}
         </div>
