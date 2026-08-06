@@ -10,6 +10,7 @@ import { ApprovalsTab } from "../components/approvals/approvals-tab";
 import { CreateTaskDrawer, TaskDetailsDrawer } from "@/modules/tasks";
 import { FeedTab } from "../components/feed/feed-tab";
 import { AnnouncementsTab } from "../components/announcements/announcements-tab";
+import { TeamCalendarPage } from "./team-calendar-page";
 import { INITIAL_POSTS, TEAM_TASKS } from "../data/team-data";
 import { EMPLOYEES } from "@/modules/organization/data/employees";
 import { LEAVE_REQUESTS } from "@/modules/leave/data/leave-requests";
@@ -274,6 +275,15 @@ export function TeamPage({
             setTApprovalDetailId={setTApprovalDetailId}
             approveT={approveT}
             rejectT={rejectT}
+          />
+        )}
+
+        {/* ── CALENDAR TAB ── */}
+        {tab === "Calendar" && (
+          <TeamCalendarPage
+            deptFilter={deptFilter}
+            teamReqs={teamReqs}
+            tasks={teamTasks}
           />
         )}
       </div>

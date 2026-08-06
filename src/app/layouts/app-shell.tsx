@@ -392,7 +392,7 @@ export function AppShell() {
     activeHeaderTab = leaveTab;
     onHeaderTabChange = setLeaveTab;
   } else if (page === "team") {
-    headerTabs = ["Overview", "Reportees", "Approvals", "Feed", "Announcements"];
+    headerTabs = ["Overview", "Reportees", "Approvals", "Feed", "Announcements", "Calendar"];
     activeHeaderTab = teamTab;
     onHeaderTabChange = setTeamTab;
   } else if (page === "organization") {
@@ -417,30 +417,7 @@ export function AppShell() {
   let headerToolbar: React.ReactNode = null;
   if (page === "team") {
     if (teamTab === "Overview") {
-      headerToolbar = (
-        <>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Team / Department:</span>
-            <select
-              value={teamDeptFilter}
-              onChange={(e) => setTeamDeptFilter(e.target.value)}
-              className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-[10px] h-[38px] px-3 text-xs font-semibold text-gray-808 outline-none cursor-pointer focus:border-[#5C5CFF]/30 transition-colors"
-            >
-              {depts.map(d => (
-                <option key={d} value={d}>{d === "All" ? "All Departments" : d}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex-1" />
-          <button
-            onClick={() => setShowTeamFilter(true)}
-            className="h-10 w-10 flex items-center justify-center p-0 rounded-[10px] border border-[#E5E7EB] bg-[#FFFFFF] text-[#16181D] hover:bg-gray-55 transition-colors cursor-pointer"
-            title="Filters"
-          >
-            <SlidersHorizontal size={16} />
-          </button>
-        </>
-      );
+      headerToolbar = null;
     } else if (teamTab === "Feed") {
       headerToolbar = null;
     } else if (teamTab === "Announcements") {

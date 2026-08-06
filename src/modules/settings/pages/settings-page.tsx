@@ -53,13 +53,7 @@ export function SettingsPage({ navigate }: { navigate: (p: AppPage) => void }) {
 
   return (
     <div className="flex flex-col h-full text-left">
-      <PageHeader
-        title="Settings"
-        breadcrumbs={[
-          { label: "Home", onClick: () => navigate("my-space") },
-          { label: "Settings" },
-        ]}
-      />
+
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <div className="w-52 flex-shrink-0 border-r border-gray-200 bg-gray-50 overflow-auto py-3">

@@ -86,13 +86,7 @@ export function SupportPage({ navigate }: { navigate: (p: AppPage) => void }) {
 
   return (
     <div className="flex flex-col h-full text-left">
-      <PageHeader
-        title="Help &amp; Support"
-        breadcrumbs={[
-          { label: "Home", onClick: () => navigate("my-space") },
-          { label: "Help & Support" },
-        ]}
-      />
+
       <div className="flex-1 overflow-auto">
         {/* Tab bar */}
         <div className="bg-white border-b border-gray-200 px-6">
